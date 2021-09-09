@@ -12,12 +12,13 @@ namespace TowerCraneGroup.SolutionModels
     /// </summary>
     public class TowerChargeHelper
     {
-        public TowerChargeHelper(int index, TowerChargeBuilding towerChargeBuilding, int floorNum, double sectionHeight)
+        public TowerChargeHelper(int index, TowerChargeBuilding towerChargeBuilding, int floorNum, double sectionHeight, double startHeight)
         {
             GeneIndex = index;
             TowerId = towerChargeBuilding.TowerId;
             BuildingId = towerChargeBuilding.BuildingId;
             TowerSectionLength = sectionHeight;
+            TowerStartHeight = startHeight;
             FloorNumber = floorNum;
         }
         /// <summary>
@@ -32,6 +33,10 @@ namespace TowerCraneGroup.SolutionModels
         /// 塔吊每节的长度
         /// </summary>
         public double TowerSectionLength { get; private set; }
+        /// <summary>
+        /// 塔吊独立高度
+        /// </summary>
+        public double TowerStartHeight { get; set; }
         /// <summary>
         /// 建筑Id
         /// </summary>

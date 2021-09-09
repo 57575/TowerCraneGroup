@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
 using TowerCraneGroup.SolutionModels;
@@ -20,6 +19,9 @@ namespace TowerCraneGroup.Services
                 SectionHeight=4.15,
                 IndependentHeight=61.5,
                 JibLength=78.28,
+                StartTime=new DateTime(2020,12,15),
+                EndTime=new DateTime(2022,5,1),
+                StartHeight=49.8,
                 LiftSectionNumDic=new Dictionary<int, int>
                 {
                     {1,8},
@@ -37,6 +39,9 @@ namespace TowerCraneGroup.Services
                 SectionHeight=4.15,
                 IndependentHeight=61.5,
                 JibLength=78.28,
+                StartTime=new DateTime(2021,1,2),
+                EndTime=new DateTime(2022,5,15),
+                StartHeight=40.8,
                 LiftSectionNumDic=new Dictionary<int, int>
                 {
                     {1,8},
@@ -54,6 +59,9 @@ namespace TowerCraneGroup.Services
                 SectionHeight=3.3,
                 IndependentHeight=62.0,
                 JibLength=77.2,
+                StartHeight=31.8,
+                StartTime=new DateTime(2021,1,10),
+                EndTime=new DateTime(2022,5,26),
                 LiftSectionNumDic=new Dictionary<int, int>
                 {
                     {1,12},
@@ -68,6 +76,24 @@ namespace TowerCraneGroup.Services
                 }
             }
         };
+        private void InitialTowers()
+        {
+            Towers.ForEach(x =>
+            {
+                int? buildingId = TowerChargeBuildings.Where(y => y.TowerId == x.Id).FirstOrDefault()?.BuildingId;
+                if (buildingId != null)
+                {
+                    int floorNum = BuildingProcess.Where(x => x.Id == buildingId.Value).First().Process.Keys.Count;
+                    if (floorNum > x.LiftSectionNumDic.Count)
+                    {
+                        int lastLiftSectionNum = x.LiftSectionNumDic.LastOrDefault().Value;
+                        int lastListIndex = x.LiftSectionNumDic.LastOrDefault().Key;
+                        for (int i = lastListIndex + 1; i <= floorNum; i++)
+                            x.LiftSectionNumDic.Add(i, lastLiftSectionNum);
+                    }
+                }
+            });
+        }
         //初始化楼宇进度信息
         private readonly List<BuildingProcessing> BuildingProcess = new List<BuildingProcessing>();
         private void AddInitialBuildings(DateTime start, int Id, int floorNum)
@@ -111,11 +137,23 @@ namespace TowerCraneGroup.Services
                 },
                 new CollisionRelation
                 {
+                    TowerId=2,CollisionId=1,RelationType= CollisionRelationType.塔吊与塔吊
+                },
+                new CollisionRelation
+                {
                     TowerId=2,CollisionId=3,RelationType= CollisionRelationType.塔吊与塔吊
                 },
                 new CollisionRelation
                 {
                     TowerId=3,CollisionId=3,RelationType= CollisionRelationType.塔吊与楼宇
+                },
+                new CollisionRelation
+                {
+                    TowerId=3,CollisionId=1,RelationType= CollisionRelationType.塔吊与塔吊
+                },
+                new CollisionRelation
+                {
+                    TowerId=3,CollisionId=2,RelationType= CollisionRelationType.塔吊与塔吊
                 }
             };
 
@@ -125,26 +163,64 @@ namespace TowerCraneGroup.Services
                 });
 
         }
+        private List<TowerChargeBuilding> TowerChargeBuildings { get; set; }
 
-        public DemoService()
+        private int GenerationCount { get; set; }
+        private Population Population { get; set; }
+        private int PopSize { get; set; }
+        private List<int> BestTenInHistory = new List<int>();
+        public DemoService(int popSize)
         {
             AddInitialBuildings(new DateTime(2021, 1, 1, 0, 0, 0), 1, 70);
             AddInitialBuildings(new DateTime(2021, 1, 14, 0, 0, 0), 2, 70);
             AddInitialBuildings(new DateTime(2021, 1, 25, 0, 0, 0), 3, 70);
             InitialCollision();
+            this.PopSize = popSize;
+            TowerChargeBuildings = CalculateHelper.CalculteTowerChargeBuilding(BuildingProcess, Collisions, Towers.ToDictionary(x => x.Id));
+            InitialTowers();
+            Population = new Population(PopSize, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, false);
+            GenerationCount = 0;
         }
 
         public void Run()
         {
-            //
-            Dictionary<int, int> towerChargeDic = CalculateHelper.CalculteTowerChargeBuilding(BuildingProcess, Collisions, Towers.ToDictionary(x => x.Id));
-
-
+            Individual solution = null;
+            while (GenerationCount < 10 || BestTenInHistory.Distinct().Count() != 1)
+            {
+                Population offspring = new Population(PopSize, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, true);
+                Population.CalculateFitness();
+                Individual best = Population.GetFittest();
+                solution = best;
+                if (BestTenInHistory.Count < 10)
+                {
+                    BestTenInHistory.Add(best.Fitness);
+                }
+                else
+                {
+                    BestTenInHistory[BestTenInHistory.IndexOf(BestTenInHistory.Max())] = best.Fitness;
+                }
+                offspring.AddIndividual(best);
+                Random random = new Random();
+                for (int i = 1; i < PopSize; i += 2)
+                {
+                    Individual son1, son2;
+                    (son1, son2) = Population.Crossover();
+                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 10.0)))
+                    {
+                        son1.Mutation();
+                    }
+                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 10.0)))
+                    {
+                        son2.Mutation();
+                    }
+                    offspring.AddIndividual(son1);
+                    offspring.AddIndividual(son2);
+                }
+                Population = offspring;
+                GenerationCount++;
+                Console.WriteLine("Generation:" + GenerationCount + "||BestFitness:" + best.Fitness);
+            }
             Console.WriteLine("DONE");
         }
-
-
-
-
     }
 }

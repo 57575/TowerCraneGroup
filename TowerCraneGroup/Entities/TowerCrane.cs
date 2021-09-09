@@ -17,6 +17,14 @@ namespace TowerCraneGroup.Entities
         /// </summary>
         public double StartHeight { get; set; }
         /// <summary>
+        /// 塔吊安装时间
+        /// </summary>
+        public DateTime StartTime { get; set; }
+        /// <summary>
+        /// 塔吊拆除时间
+        /// </summary>
+        public DateTime EndTime { get; set; }
+        /// <summary>
         /// 每节高度
         /// </summary>
         public double SectionHeight { get; set; }

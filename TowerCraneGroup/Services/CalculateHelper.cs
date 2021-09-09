@@ -16,9 +16,9 @@ namespace TowerCraneGroup.Services
         /// 即计算塔吊负责的所建造的最快的楼宇
         /// </summary>
         /// <returns>（塔吊Id,楼宇Id）</returns>
-        public static Dictionary<int, int> CalculteTowerChargeBuilding(List<BuildingProcessing> processings, Dictionary<int, List<CollisionRelation>> collisions, Dictionary<int, TowerCrane> towersDic)
+        public static List<TowerChargeBuilding> CalculteTowerChargeBuilding(List<BuildingProcessing> processings, Dictionary<int, List<CollisionRelation>> collisions, Dictionary<int, TowerCrane> towersDic)
         {
-            var result = new Dictionary<int, int>();
+            List<TowerChargeBuilding> results = new List<TowerChargeBuilding>();
             foreach (KeyValuePair<int, List<CollisionRelation>> aTower in collisions)
             {
                 List<int> buildingIds = aTower.Value
@@ -33,15 +33,20 @@ namespace TowerCraneGroup.Services
 
                 if (towersDic[aTower.Key].IndependentHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth())
                 {
-                    result.Add(aTower.Key, mainBuildingId);
+                    var result = new TowerChargeBuilding
+                    {
+                        TowerId = aTower.Key,
+                        BuildingId = mainBuildingId
+                    };
+                    results.Add(result);
                 }
             }
 
-            return result;
+            return results;
         }
-    
-    
+
+
         public static int CalculateTowerMaxLiftSection() { return 0; }
-    
+
     }
 }
