@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TowerCraneGroup.Entities;
@@ -171,9 +172,9 @@ namespace TowerCraneGroup.Services
         private List<int> BestTenInHistory = new List<int>();
         public DemoService(int popSize)
         {
-            AddInitialBuildings(new DateTime(2021, 1, 1, 0, 0, 0), 1, 70);
-            AddInitialBuildings(new DateTime(2021, 1, 14, 0, 0, 0), 2, 70);
-            AddInitialBuildings(new DateTime(2021, 1, 25, 0, 0, 0), 3, 70);
+            AddInitialBuildings(new DateTime(2021, 1, 1, 0, 0, 0), 1, 30);
+            AddInitialBuildings(new DateTime(2021, 1, 14, 0, 0, 0), 2, 30);
+            AddInitialBuildings(new DateTime(2021, 1, 25, 0, 0, 0), 3, 30);
             InitialCollision();
             this.PopSize = popSize;
             TowerChargeBuildings = CalculateHelper.CalculteTowerChargeBuilding(BuildingProcess, Collisions, Towers.ToDictionary(x => x.Id));
@@ -185,15 +186,17 @@ namespace TowerCraneGroup.Services
         public void Run()
         {
             Individual solution = null;
-            while (GenerationCount < 10 || BestTenInHistory.Distinct().Count() != 1)
+            while (GenerationCount < 10000 || BestTenInHistory.Distinct().Count() != 1 || solution.CalculateForbidden(Population.Collision, Population.Buildings, Population.Towers, Population.TowerChargeDic))
             {
                 Population offspring = new Population(PopSize, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, true);
                 Population.CalculateFitness();
-                Individual best = Population.GetFittest();
+                Individual best = new Individual();
+                string bestJson = Population.GetFittest().Serialize();
+                best = JsonConvert.DeserializeObject<Individual>(bestJson);
                 solution = best;
-                if (BestTenInHistory.Count < 10)
+                if (BestTenInHistory.Count < 10000)
                 {
-                    BestTenInHistory.Add(best.Fitness);
+                    BestTenInHistory.Add(Population.GetFittest().Fitness);
                 }
                 else
                 {
@@ -205,17 +208,22 @@ namespace TowerCraneGroup.Services
                 {
                     Individual son1, son2;
                     (son1, son2) = Population.Crossover();
-                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 10.0)))
+                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 2.0)))
                     {
                         son1.Mutation();
                     }
-                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 10.0)))
+                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 2.0)))
                     {
                         son2.Mutation();
                     }
-                    offspring.AddIndividual(son1);
-                    offspring.AddIndividual(son2);
+                    Individual newSon1 = new Individual();
+                    newSon1 = JsonConvert.DeserializeObject<Individual>(son1.Serialize());
+                    Individual newSon2 = new Individual();
+                    newSon2 = JsonConvert.DeserializeObject<Individual>(son2.Serialize());
+                    offspring.AddIndividual(newSon1);
+                    offspring.AddIndividual(newSon2);
                 }
+                offspring.CalculateFitness();
                 Population = offspring;
                 GenerationCount++;
                 Console.WriteLine("Generation:" + GenerationCount + "||BestFitness:" + best.Fitness);

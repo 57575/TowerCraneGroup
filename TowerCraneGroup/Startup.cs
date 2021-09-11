@@ -27,7 +27,7 @@ namespace TowerCraneGroup
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            DemoService demoService = new DemoService(5);
+            DemoService demoService = new DemoService(20);
             demoService.Run();
         }
 

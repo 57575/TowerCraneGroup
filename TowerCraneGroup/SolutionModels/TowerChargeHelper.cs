@@ -12,6 +12,10 @@ namespace TowerCraneGroup.SolutionModels
     /// </summary>
     public class TowerChargeHelper
     {
+        public TowerChargeHelper()
+        {
+
+        }
         public TowerChargeHelper(int index, TowerChargeBuilding towerChargeBuilding, int floorNum, double sectionHeight, double startHeight)
         {
             GeneIndex = index;
