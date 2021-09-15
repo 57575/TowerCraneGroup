@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
+using Newtonsoft.Json.Serialization;
 
 namespace TowerCraneGroup.SolutionModels
 {
@@ -19,6 +20,7 @@ namespace TowerCraneGroup.SolutionModels
         /// <summary>
         /// 适应度评分
         /// </summary>
+        [JsonRequired]
         public int Fitness { get; private set; }
 
         /// <summary>
@@ -103,13 +105,19 @@ namespace TowerCraneGroup.SolutionModels
             Fitness = 0;
             Genes.ForEach(x =>
             {
-                Fitness = +x.Count(y => y != 0);
+                Fitness += 2 * x.Count(y => y != 0);
             });
             Fitness +=
-                  20 * CollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic)
+                  40 * BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic)
+                + 10 * TowerCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic)
                 + 10 * LiftingNumber(towerDic, towerChargeDic)
                 + 5 * HigherNumber(buildingDic, towerChargeDic)
                 + 20 * LowThanNeedNumber(buildingDic, towerChargeDic);
+            //var c = HigherNumber(buildingDic, towerChargeDic);
+            //var d = LiftingNumber(towerDic, towerChargeDic);
+            //var e = LowThanNeedNumber(buildingDic, towerChargeDic);
+            //var b = BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
+            //var a = TowerCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
         }
         /// <summary>
         /// 是否有不允许的情况
@@ -124,9 +132,8 @@ namespace TowerCraneGroup.SolutionModels
             Dictionary<int, TowerCrane> towerDic,
             Dictionary<int, TowerChargeHelper> towerChargeDic)
         {
-            if (CollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic) == 0
-                && LiftingNumber(towerDic, towerChargeDic) == 0
-                && HigherNumber(buildingDic, towerChargeDic) == 0
+            if (TowerCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic) == 0
+                && BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic) == 0
                 && LowThanNeedNumber(buildingDic, towerChargeDic) == 0)
             {
                 return false;
@@ -137,13 +144,72 @@ namespace TowerCraneGroup.SolutionModels
             }
         }
 
+
+        private int BuildingCollisionNumber
+            (
+            Dictionary<int, List<CollisionRelation>> collisionsDic,
+            Dictionary<int, BuildingProcessing> buildingDic,
+            Dictionary<int, TowerCrane> towerDic,
+            Dictionary<int, TowerChargeHelper> towerChargeDic
+            )
+        {
+            int result = 0;
+            for (int i = 0; i < towerChargeDic.Count; i++)
+            {
+                //简单验证
+                if (towerChargeDic[i].FloorNumber != Genes[i].Count)
+                    throw new Exception("发生未知错误");
+                if (collisionsDic.TryGetValue(towerChargeDic[i].TowerId, out List<CollisionRelation> col))
+                {
+                    List<int> collisionBuildingIds = col.Where(x => x.RelationType == CollisionRelationType.塔吊与楼宇).Select(x => x.CollisionId).ToList();
+                    TowerCrane thisTower = towerDic[towerChargeDic[i].TowerId];
+                    double thisTowerHeight = thisTower.StartHeight;
+                    for (int floorIndex = 0; floorIndex < Genes[i].Count; floorIndex++)
+                    {
+                        if (Genes[i][floorIndex] != 0)
+                        {
+                            double beforeLiftHeight = thisTowerHeight;
+                            double afterLiftHeight = beforeLiftHeight + thisTower.SectionHeight * Genes[i][floorIndex];
+                            //控制楼宇本层完工时间
+                            DateTime thisFloorFinish = buildingDic[towerChargeDic[i].BuildingId].Process.Keys.ToList()[floorIndex];
+                            //检测塔吊和所负责楼宇的碰撞
+                            collisionBuildingIds.ForEach(buil =>
+                            {
+                                DateTime? lastTime = null;
+                                var times = buildingDic[buil].Process.Keys.Where(x => x <= thisFloorFinish);
+                                if (times != null && times.Count() != 0)
+                                { lastTime = times.OrderBy(x => x).LastOrDefault(); }
+
+                                //lastTime为空，即检测塔吊范围内的楼宇还未开工
+                                if (lastTime != null)
+                                {
+                                    //检测到有碰撞时，碰撞次数加一
+                                    if (CalculateBuildingCollision(beforeLiftHeight, buildingDic[buil].Process[lastTime.Value]))
+                                        result += 1;
+                                }
+                            });
+
+                            thisTowerHeight = afterLiftHeight;
+                        }
+                    }
+                }
+                else
+                {
+                    throw new Exception("发生未知错误");
+                }
+            }
+
+
+            return result;
+        }
+
         /// <summary>
         /// 碰撞次数
         /// </summary>
         /// <param name="collisionsDic"></param>
         /// <param name="buildingDic"></param>
         /// <returns></returns>
-        private int CollisionNumber(
+        private int TowerCollisionNumber(
             Dictionary<int, List<CollisionRelation>> collisionsDic,
             Dictionary<int, BuildingProcessing> buildingDic,
             Dictionary<int, TowerCrane> towerDic,
@@ -159,7 +225,6 @@ namespace TowerCraneGroup.SolutionModels
                     throw new Exception("发生未知错误");
                 if (collisionsDic.TryGetValue(towerChargeDic[i].TowerId, out List<CollisionRelation> col))
                 {
-                    List<int> collisionBuildingIds = col.Where(x => x.RelationType == CollisionRelationType.塔吊与楼宇).Select(x => x.CollisionId).ToList();
                     List<int> collisionTowerIds = col.Where(x => x.RelationType == CollisionRelationType.塔吊与塔吊).Select(x => x.CollisionId).ToList();
                     TowerCrane thisTower = towerDic[towerChargeDic[i].TowerId];
                     double thisTowerHeight = thisTower.StartHeight;
@@ -172,18 +237,6 @@ namespace TowerCraneGroup.SolutionModels
                             double afterLiftHeight = thisTowerHeight + thisTower.SectionHeight * Genes[i][floorIndex];
                             //控制楼宇本层完工时间
                             DateTime thisFloorFinish = buildingDic[towerChargeDic[i].BuildingId].Process.Keys.ToList()[floorIndex];
-                            //检测塔吊和所负责楼宇的碰撞
-                            collisionBuildingIds.ForEach(buil =>
-                            {
-                                DateTime? lastTime = null;
-                                var times = buildingDic[buil].Process.Keys.Where(x => x <= thisFloorFinish);
-                                if (times != null && times.Count() != 0)
-                                { lastTime = times.OrderBy(x => x).LastOrDefault(); }
-                                if (lastTime != null && CalculateBuildingCollision(beforeLiftHeight, buildingDic[buil].Process[lastTime.Value]))
-                                {
-                                    result += 1;
-                                }
-                            });
                             //检测塔吊和塔吊的碰撞
                             collisionTowerIds.ForEach(towerId =>
                             {
@@ -197,6 +250,7 @@ namespace TowerCraneGroup.SolutionModels
                                     }
                                 }
                             });
+                            thisTowerHeight = afterLiftHeight;
                         }
                     }
                 }
@@ -218,7 +272,7 @@ namespace TowerCraneGroup.SolutionModels
         /// <returns>是否碰撞</returns>
         private bool CalculateBuildingCollision(double beforeLift, double buildingHeight)
         {
-            if (buildingHeight > beforeLift + SecurityHeight)
+            if (buildingHeight + SecurityHeight > beforeLift)
                 return true;
             else
                 return false;
@@ -236,11 +290,14 @@ namespace TowerCraneGroup.SolutionModels
         /// <returns>是否碰撞，是为true</returns>
         private bool CalculateTowerCollision(double beforeLift, double afterLift, DateTime thisFloorFinish, int towerId, Dictionary<int, BuildingProcessing> buildingDic, Dictionary<int, TowerChargeHelper> towerChargeDic)
         {
+            //被检测塔吊
+            TowerChargeHelper CollisionTower = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault();
             //被检测塔吊的主要楼宇的Id
-            int buildingId = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().BuildingId;
+            int buildingId = CollisionTower.BuildingId;
             //被检测塔吊在基因组中的Index
-            int index = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().GeneIndex;
-
+            int index = CollisionTower.GeneIndex;
+            //被检测塔吊的节长
+            double sectionLength = CollisionTower.TowerSectionLength;
             //
             DateTime? time = null;
             var times = buildingDic[buildingId].Process.Keys.Where(x => x <= thisFloorFinish);
@@ -251,12 +308,12 @@ namespace TowerCraneGroup.SolutionModels
             //即被检测塔吊不提升
             if (time is null)
             {
-                //当前楼宇的初始高度
+                //被检测塔吊的初始高度
                 double height = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerStartHeight;
                 //被检测塔吊提升前高于本塔吊                
                 if (height > beforeLift)
                 {
-                    if (height > afterLift + SecurityHeight)
+                    if (height >= afterLift + SecurityHeight)
                         return false;
                     else
                         return true;
@@ -275,21 +332,21 @@ namespace TowerCraneGroup.SolutionModels
                 if (time == thisFloorFinish && Genes[index][floorIndex] != 0)
                 {
                     //被检测塔吊提升前
-                    double beijianceqian = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerStartHeight;
+                    double beijianceqian = CollisionTower.TowerStartHeight;
                     for (int i = 0; i < floorIndex; i++)
                     {
                         if (Genes[index][i] != 0)
                         {
-                            beijianceqian += Genes[index][i] * towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerSectionLength;
+                            beijianceqian += Genes[index][i] * sectionLength;
                         }
                     }
                     //被检测塔吊提升后
-                    double beijiancehou = beijianceqian + Genes[index][floorIndex] * towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerSectionLength;
+                    double beijiancehou = beijianceqian + Genes[index][floorIndex] * sectionLength;
 
                     //被检测塔吊是高位塔吊
                     if (beijianceqian > beforeLift)
                     {
-                        if (beijiancehou > afterLift + SecurityHeight)
+                        if (beijiancehou >= afterLift + SecurityHeight)
                             return false;
                         else
                             return true;
@@ -297,7 +354,7 @@ namespace TowerCraneGroup.SolutionModels
                     //被检测塔吊是低位塔吊
                     else//beijianceqian <= beforeLift
                     {
-                        if (beijiancehou + SecurityHeight < afterLift)
+                        if (beijiancehou + SecurityHeight <= afterLift)
                             return false;
                         else
                             return true;
@@ -306,18 +363,18 @@ namespace TowerCraneGroup.SolutionModels
                 //当日被检测塔吊不提升
                 else
                 {
-                    double height = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerStartHeight;
+                    double height = CollisionTower.TowerStartHeight;
                     for (int i = 0; i <= floorIndex; i++)
                     {
                         if (Genes[index][i] != 0)
                         {
-                            height += Genes[index][i] * towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerSectionLength;
+                            height += Genes[index][i] * sectionLength;
                         }
                     }
                     //被检测塔吊是高位塔吊
                     if (height > beforeLift)
                     {
-                        if (height > afterLift + SecurityHeight)
+                        if (height >= afterLift + SecurityHeight)
                             return false;
                         else//height<afterlift+se
                             return true;
@@ -383,7 +440,7 @@ namespace TowerCraneGroup.SolutionModels
                 if (towerChargeDic[i].FloorNumber != Genes[i].Count)
                     throw new Exception("发生未知错误");
 
-                double finalHeighth = buildingDic[towerChargeDic[i].BuildingId].GetFinalStructureHeighth();
+                double finalHeighth = (buildingDic[towerChargeDic[i].BuildingId].GetFinalStructureHeighth()) + SecurityHeight;
 
                 //计算出该塔吊提升后大于塔吊所需最终高度的节数
                 int needSectionNum = (int)Math.Ceiling(finalHeighth / towerChargeDic[i].TowerSectionLength);
@@ -406,7 +463,7 @@ namespace TowerCraneGroup.SolutionModels
                 int sectionNum = Genes[towerChargeDic[i].GeneIndex].Where(x => x > 0).Sum();
                 double buildingHeight = buildingDic[towerChargeDic[i].BuildingId].Process.Values.Max();
                 double difference = (buildingHeight + SecurityHeight) - sectionNum * towerChargeDic[i].TowerSectionLength;
-                if (difference >= 0)
+                if (difference > 0)
                 {
                     double percentage = (difference / (buildingHeight + SecurityHeight)) * 100;
                     if (percentage < 20)
