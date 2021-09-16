@@ -27,8 +27,9 @@ namespace TowerCraneGroup
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            DemoService demoService = new DemoService(20);
+            DemoService demoService = new DemoService(21);
             demoService.Run();
+            //demoService.DebugServe();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

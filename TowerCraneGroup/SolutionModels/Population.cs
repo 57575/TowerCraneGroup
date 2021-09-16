@@ -12,45 +12,49 @@ namespace TowerCraneGroup.SolutionModels
         /// <summary>
         /// 种群规模
         /// </summary>
-        private int PopulationSize { get; set; }
+        //private int PopulationSize { get; set; }
         private List<Individual> Individuals { get; set; }
-        public Dictionary<int, TowerCrane> Towers { get; set; }
-        private List<TowerChargeBuilding> TowerCharges { get; set; }
-        public Dictionary<int, BuildingProcessing> Buildings { get; set; }
-        public Dictionary<int, List<CollisionRelation>> Collision { get; set; }
-        public Dictionary<int, TowerChargeHelper> TowerChargeDic { get; set; }
+        //public Dictionary<int, TowerCrane> Towers { get; set; }
+        //private List<TowerChargeBuilding> TowerCharges { get; set; }
+        //public Dictionary<int, BuildingProcessing> Buildings { get; set; }
+        //public Dictionary<int, List<CollisionRelation>> Collision { get; set; }
+        //public Dictionary<int, TowerChargeHelper> TowerChargeDic { get; set; }
         public Population(int popSize, Dictionary<int, TowerCrane> towerInfo, List<TowerChargeBuilding> towerCharge, Dictionary<int, BuildingProcessing> buildings, Dictionary<int, List<CollisionRelation>> collisionsDic, bool empty)
         {
-            this.Collision = collisionsDic;
-            this.Towers = towerInfo;
-            this.TowerCharges = towerCharge;
-            this.Buildings = buildings;
-            PopulationSize = popSize;
+            //this.Collision = collisionsDic;
+            //this.Towers = towerInfo;
+            //this.TowerCharges = towerCharge;
+            //this.Buildings = buildings;
+            //PopulationSize = popSize;
             Individuals = new List<Individual>();
-            TowerChargeDic = new Dictionary<int, TowerChargeHelper>();
-            int geneIndex = 0;
-            foreach (var tower in TowerCharges)
-            {
-                int max = towerInfo[tower.TowerId].LiftSectionNumDic.Values.Max();
-                int length = buildings[tower.BuildingId].Process.Count;
-                TowerChargeHelper aHelper = new TowerChargeHelper(geneIndex, tower, length, towerInfo[tower.TowerId].SectionHeight, towerInfo[tower.TowerId].StartHeight);
-                TowerChargeDic.Add(aHelper.GeneIndex, aHelper);
-                geneIndex++;
-            }
+            //TowerChargeDic = new Dictionary<int, TowerChargeHelper>();
+            //int geneIndex = 0;
+            //foreach (var tower in TowerCharges)
+            //{
+            //    int max = towerInfo[tower.TowerId].LiftSectionNumDic.Values.Max();
+            //    int length = buildings[tower.BuildingId].Process.Count;
+            //    TowerChargeHelper aHelper = new TowerChargeHelper(geneIndex, tower, length, towerInfo[tower.TowerId].SectionHeight, towerInfo[tower.TowerId].StartHeight);
+            //    TowerChargeDic.Add(aHelper.GeneIndex, aHelper);
+            //    geneIndex++;
+            //}
             if (!empty)
             {
                 for (int i = 0; i < popSize; i++)
                 {
-                    Individuals.Add(new Individual(Towers, TowerCharges, Buildings));
-
+                    //Individuals.Add(new Individual(towerInfo, towerCharge, buildings));
+                    Individuals.Add(new Individual(true));
                 }
             }
         }
-        public void CalculateFitness()
+        public void CalculateFitness(
+            Dictionary<int, List<CollisionRelation>> collision,
+            Dictionary<int, BuildingProcessing> buildings,
+            Dictionary<int, TowerCrane> towers,
+            Dictionary<int, TowerChargeHelper> towerChargeDic)
         {
             Individuals.ForEach(x =>
             {
-                x.CalculateFitness(Collision, Buildings, Towers, TowerChargeDic);
+                x.CalculateFitness(collision, buildings, towers, towerChargeDic);
             });
         }
         public Individual GetFittest()

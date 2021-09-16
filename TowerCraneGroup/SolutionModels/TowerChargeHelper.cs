@@ -38,7 +38,7 @@ namespace TowerCraneGroup.SolutionModels
         /// </summary>
         public double TowerSectionLength { get; private set; }
         /// <summary>
-        /// 塔吊独立高度
+        /// 塔吊开始高度
         /// </summary>
         public double TowerStartHeight { get; set; }
         /// <summary>

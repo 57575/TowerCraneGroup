@@ -170,6 +170,11 @@ namespace TowerCraneGroup.Services
         private Population Population { get; set; }
         private int PopSize { get; set; }
         private List<int> BestTenInHistory = new List<int>();
+
+        private Dictionary<int, TowerCrane> TowersDic => Towers.ToDictionary(x => x.Id);
+        private Dictionary<int, BuildingProcessing> BuildingsDic => BuildingProcess.ToDictionary(x => x.Id);
+        private Dictionary<int, TowerChargeHelper> TowerChargeDic { get; set; }
+
         public DemoService(int popSize)
         {
             AddInitialBuildings(new DateTime(2021, 1, 1, 0, 0, 0), 1, 30);
@@ -181,15 +186,29 @@ namespace TowerCraneGroup.Services
             InitialTowers();
             Population = new Population(PopSize, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, false);
             GenerationCount = 0;
+            int geneIndex = 0;
+            TowerChargeDic = new Dictionary<int, TowerChargeHelper>();
+            foreach (var tower in TowerChargeBuildings)
+            {
+                int max = TowersDic[tower.TowerId].LiftSectionNumDic.Values.Max();
+                int length = BuildingsDic[tower.BuildingId].Process.Count;
+                TowerChargeHelper aHelper = new TowerChargeHelper(geneIndex, tower, length, TowersDic[tower.TowerId].SectionHeight, TowersDic[tower.TowerId].StartHeight);
+                TowerChargeDic.Add(aHelper.GeneIndex, aHelper);
+                geneIndex++;
+            }
         }
 
         public void Run()
         {
             Individual solution = null;
-            while (GenerationCount < 10000 || BestTenInHistory.Distinct().Count() != 1 || solution.CalculateForbidden(Population.Collision, Population.Buildings, Population.Towers, Population.TowerChargeDic))
+            while (
+                GenerationCount < 10000
+                || BestTenInHistory.Distinct().Count() != 1
+                || solution.CalculateForbidden(Collisions, BuildingsDic, TowersDic, TowerChargeDic)
+                )
             {
                 Population offspring = new Population(PopSize, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, true);
-                Population.CalculateFitness();
+                Population.CalculateFitness(Collisions, BuildingsDic, TowersDic, TowerChargeDic);
                 Individual best = new Individual();
                 string bestJson = Population.GetFittest().Serialize();
                 best = JsonConvert.DeserializeObject<Individual>(bestJson);
@@ -204,31 +223,68 @@ namespace TowerCraneGroup.Services
                 }
                 offspring.AddIndividual(best);
                 Random random = new Random();
-                for (int i = 1; i < PopSize; i += 2)
+                for (int i = 1; i < PopSize || offspring.GetPopulationSize() < PopSize; i += 2)
                 {
                     Individual son1, son2;
                     (son1, son2) = Population.Crossover();
-                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 2.0)))
+                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 1.0)))
                     {
-                        son1.Mutation();
+                        son1.Mutation(18, BuildingsDic, TowerChargeDic);
                     }
-                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 2.0)))
+                    if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 1.0)))
                     {
-                        son2.Mutation();
+                        son2.Mutation(18, BuildingsDic, TowerChargeDic);
                     }
                     Individual newSon1 = new Individual();
                     newSon1 = JsonConvert.DeserializeObject<Individual>(son1.Serialize());
                     Individual newSon2 = new Individual();
                     newSon2 = JsonConvert.DeserializeObject<Individual>(son2.Serialize());
-                    offspring.AddIndividual(newSon1);
-                    offspring.AddIndividual(newSon2);
+                    if (newSon1.CalculateBaseConstraint(BuildingsDic, TowerChargeDic))
+                    {
+                        offspring.AddIndividual(newSon1);
+                    }
+                    if (newSon2.CalculateBaseConstraint(BuildingsDic, TowerChargeDic))
+                    {
+                        offspring.AddIndividual(newSon2);
+                    }
                 }
-                offspring.CalculateFitness();
+                //offspring.CalculateFitness();
                 Population = offspring;
                 GenerationCount++;
                 Console.WriteLine("Generation:" + GenerationCount + "||BestFitness:" + best.Fitness);
             }
+            string solutionStr = JsonConvert.SerializeObject(solution);
+            Console.WriteLine("Solution:" + solutionStr);
             Console.WriteLine("DONE");
+        }
+
+        public void DebugServe()
+        {
+            Individual individual = new Individual();
+            individual.Genes = new List<List<int>>()
+            {
+                new List<int>
+                {
+                    0,0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0
+                },
+                new List<int>
+                {
+                    0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0,0
+                },
+                new List<int>
+                {
+                    0,0,0,0,12,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0
+                }
+            };
+            Population offspring = new Population(1, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, true);
+
+            offspring.AddIndividual(individual);
+
+            offspring.CalculateFitness(Collisions, BuildingsDic, TowersDic, TowerChargeDic);
+
+            Console.WriteLine(individual.Serialize());
+
+            var a = 1;
         }
     }
 }
