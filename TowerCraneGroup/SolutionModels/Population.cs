@@ -41,8 +41,8 @@ namespace TowerCraneGroup.SolutionModels
             {
                 for (int i = 0; i < popSize; i++)
                 {
-                    //Individuals.Add(new Individual(towerInfo, towerCharge, buildings));
-                    Individuals.Add(new Individual(true));
+                    Individuals.Add(new Individual(towerInfo, towerCharge, buildings));
+                    //Individuals.Add(new Individual(true));
                 }
             }
         }
