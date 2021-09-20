@@ -16,9 +16,14 @@ namespace TowerCraneGroup.InputModels
         /// </summary>
         public Dictionary<DateTime, double> Process { get; set; }
 
-        public Dictionary<DateTime, double> OrderProcess()
+        public double GetHeightByFloorIndex(int floorIndex)
         {
-            return Process.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            return Process.Values.ToList()[floorIndex];
+        }
+
+        public DateTime GetDateTimeByFloorIndex(int floorIndex)
+        {
+            return Process.Keys.ToList()[floorIndex];
         }
 
         public double GetFinalStructureHeighth()

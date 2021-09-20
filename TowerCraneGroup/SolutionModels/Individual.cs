@@ -31,6 +31,7 @@ namespace TowerCraneGroup.SolutionModels
         public Individual()
         {
             Genes = new List<List<int>>();
+            Fitness = 0;
         }
         public Dictionary<int, int> InitialIndividual(Dictionary<int, TowerCrane> towerInfo, List<TowerChargeBuilding> towerCharge, Dictionary<int, BuildingProcessing> buildings)
         {
@@ -124,9 +125,13 @@ namespace TowerCraneGroup.SolutionModels
             Dictionary<int, TowerChargeHelper> towerChargeDic)
         {
             Fitness = 0;
+            int maxLiftCount = 0;
             Genes.ForEach(x =>
             {
-                Fitness += 3 * x.Count(y => y != 0);
+                int tem = (int)Math.Pow(x.Count(y => y != 0), 2);
+                if (tem > maxLiftCount)
+                    maxLiftCount = tem;
+                Fitness += (int)Math.Pow(x.Count(y => y != 0), 2);
             });
             //Fitness +=
             //      40 * BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic)
@@ -139,7 +144,7 @@ namespace TowerCraneGroup.SolutionModels
             var low = LowThanNeedNumber(buildingDic, towerChargeDic);
             var building = BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
             var tower = TowerCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
-            Fitness += 100 * building + 100 * tower + 10 * lift + 5 * higher + 40 * low;
+            Fitness += maxLiftCount * building + maxLiftCount * tower + 10 * lift + 5 * higher + 40 * low;
         }
         /// <summary>
         /// 是否有不允许的情况
@@ -349,18 +354,13 @@ namespace TowerCraneGroup.SolutionModels
             {
                 //被检测塔吊的初始高度
                 double height = towerChargeDic.Values.Where(x => x.TowerId == towerId).FirstOrDefault().TowerStartHeight;
-                //被检测塔吊提升前高于本塔吊                
-                if (height > beforeLift)
-                {
-                    if (height >= afterLift + SecurityHeight)
-                        return false;
-                    else
-                        return true;
-                }
-                //被检测塔吊低于本塔吊
-                else
+                if (afterLift >= height + SecurityHeight || afterLift <= height - SecurityHeight)
                 {
                     return false;
+                }
+                else
+                {
+                    return true;
                 }
             }
             //被检测塔吊当天有可能有提升
@@ -382,21 +382,13 @@ namespace TowerCraneGroup.SolutionModels
                     //被检测塔吊提升后
                     double beijiancehou = beijianceqian + Genes[index][floorIndex] * sectionLength;
 
-                    //被检测塔吊是高位塔吊
-                    if (beijianceqian > beforeLift)
+                    if (afterLift >= beijiancehou + SecurityHeight || afterLift <= beijiancehou - SecurityHeight)
                     {
-                        if (beijiancehou >= afterLift + SecurityHeight)
-                            return false;
-                        else
-                            return true;
+                        return false;
                     }
-                    //被检测塔吊是低位塔吊
-                    else//beijianceqian <= beforeLift
+                    else
                     {
-                        if (beijiancehou + SecurityHeight <= afterLift)
-                            return false;
-                        else
-                            return true;
+                        return true;
                     }
                 }
                 //当日被检测塔吊不提升
@@ -410,18 +402,14 @@ namespace TowerCraneGroup.SolutionModels
                             height += Genes[index][i] * sectionLength;
                         }
                     }
-                    //被检测塔吊是高位塔吊
-                    if (height > beforeLift)
-                    {
-                        if (height >= afterLift + SecurityHeight)
-                            return false;
-                        else//height<afterlift+se
-                            return true;
-                    }
-                    //被检测塔吊是低位塔吊
-                    else//height<beforeLift
+
+                    if (afterLift >= height + SecurityHeight || afterLift <= height - SecurityHeight)
                     {
                         return false;
+                    }
+                    else
+                    {
+                        return true;
                     }
                 }
             }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
 using TowerCraneGroup.SolutionModels;
@@ -265,15 +266,21 @@ namespace TowerCraneGroup.Services
             {
                 new List<int>
                 {
-                    0,0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0
+                    //0,0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0
+                    0,7,0,0,0,0,0,0,0,0,0,7,0,0,1,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0
+                    //0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,5,0,0,0,0,0
                 },
                 new List<int>
                 {
-                    0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0,0
+                    //0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0,0
+                    0,0,2,0,5,0,0,5,0,0,0,1,1,0,0,0,0,0,7,0,4,0,0,0,0,0,0,0,0,0
+                    //0,0,0,0,0,0,8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,5,0,0,0,0,5,0,0
                 },
                 new List<int>
                 {
-                    0,0,0,0,12,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0
+                    //0,0,0,0,12,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0
+                    0,1,0,1,1,0,2,0,2,0,2,7,1,0,0,0,0,1,5,0,5,0,0,0,2,0,0,0,1,0
+                    //0,0,0,0,10,0,0,0,0,0,0,0,10,0,0,0,0,0,0,10,5,0,0,0,0,3,0,0,0,0
                 }
             };
             Population offspring = new Population(1, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, true);
@@ -284,7 +291,14 @@ namespace TowerCraneGroup.Services
 
             Console.WriteLine(individual.Serialize());
 
-            var a = 1;
+            Console.ReadLine();
+        }
+
+        public void GreedyServe()
+        {
+            GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(TowersDic, TowerChargeBuildings, BuildingsDic, Collisions);
+
+            greedyAlgorithmService.RunService();
         }
     }
 }
