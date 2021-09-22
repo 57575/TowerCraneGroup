@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
+using TowerCraneGroup.Services;
 
 namespace TowerCraneGroup.SolutionModels
 {
@@ -39,7 +40,9 @@ namespace TowerCraneGroup.SolutionModels
             //}
             if (!empty)
             {
-                for (int i = 0; i < popSize; i++)
+                GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towerInfo, towerCharge, buildings, collisionsDic);
+                this.Individuals.Add(greedyAlgorithmService.RunService());
+                for (; this.Individuals.Count < popSize;)
                 {
                     Individuals.Add(new Individual(towerInfo, towerCharge, buildings));
                     //Individuals.Add(new Individual(true));
