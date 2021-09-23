@@ -82,14 +82,29 @@ namespace TowerCraneGroup.Services
         {
             Towers.ForEach(x =>
             {
+                if (x.StartHeight < x.IndependentHeight)
+                {
+                    int sectionNumToIndependent = (int)Math.Floor((x.IndependentHeight - x.StartHeight) / x.SectionHeight);
+                    if (sectionNumToIndependent > 0)
+                    {
+                        x.LiftSectionNumDic.Keys.OrderByDescending(key => key).ToList().ForEach(key =>
+                        {
+                            int value = x.LiftSectionNumDic[key];
+                            x.LiftSectionNumDic.Remove(key);
+                            x.LiftSectionNumDic.Add(++key, value);
+                        });
+                        x.LiftSectionNumDic.Add(1, sectionNumToIndependent);
+                    }
+                }
+
                 int? buildingId = TowerChargeBuildings.Where(y => y.TowerId == x.Id).FirstOrDefault()?.BuildingId;
                 if (buildingId != null)
                 {
                     int floorNum = BuildingProcess.Where(x => x.Id == buildingId.Value).First().Process.Keys.Count;
                     if (floorNum > x.LiftSectionNumDic.Count)
                     {
-                        int lastLiftSectionNum = x.LiftSectionNumDic.LastOrDefault().Value;
-                        int lastListIndex = x.LiftSectionNumDic.LastOrDefault().Key;
+                        int lastListIndex = x.LiftSectionNumDic.Keys.OrderBy(key => key).LastOrDefault();
+                        int lastLiftSectionNum = x.LiftSectionNumDic[lastListIndex];
                         for (int i = lastListIndex + 1; i <= floorNum; i++)
                             x.LiftSectionNumDic.Add(i, lastLiftSectionNum);
                     }
@@ -267,20 +282,23 @@ namespace TowerCraneGroup.Services
                 new List<int>
                 {
                     //0,0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0
-                    0,7,0,0,0,0,0,0,0,0,0,7,0,0,1,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0
+                    //0,7,0,0,0,0,0,0,0,0,0,7,0,0,1,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0
                     //0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,5,0,0,0,0,0
+                    0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,8,4,0,0,0,0,0,0,0,5,0,0,0,0,0
                 },
                 new List<int>
                 {
                     //0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,1,0,0,0,0,0,0,0,0
-                    0,0,2,0,5,0,0,5,0,0,0,1,1,0,0,0,0,0,7,0,4,0,0,0,0,0,0,0,0,0
+                    //0,0,2,0,5,0,0,5,0,0,0,1,1,0,0,0,0,0,7,0,4,0,0,0,0,0,0,0,0,0
                     //0,0,0,0,0,0,8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,5,0,0,0,0,5,0,0
+                    0,0,0,0,0,0,5,0,0,0,0,8,0,0,0,0,0,0,0,7,0,0,0,0,0,0,5,0,0,0
                 },
                 new List<int>
                 {
                     //0,0,0,0,12,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0
-                    0,1,0,1,1,0,2,0,2,0,2,7,1,0,0,0,0,1,5,0,5,0,0,0,2,0,0,0,1,0
+                    //0,1,0,1,1,0,2,0,2,0,2,7,1,0,0,0,0,1,5,0,5,0,0,0,2,0,0,0,1,0
                     //0,0,0,0,10,0,0,0,0,0,0,0,10,0,0,0,0,0,0,10,5,0,0,0,0,3,0,0,0,0
+                    0,0,0,0,12,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0
                 }
             };
             Population offspring = new Population(1, Towers.ToDictionary(x => x.Id), TowerChargeBuildings, BuildingProcess.ToDictionary(x => x.Id), Collisions, true);

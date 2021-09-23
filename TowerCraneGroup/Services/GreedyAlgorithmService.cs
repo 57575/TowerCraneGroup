@@ -71,6 +71,7 @@ namespace TowerCraneGroup.Services
             }
             //Solution.CalculateFitness(Collision, Buildings, Towers, TowerChargeHelpers.ToDictionary(x => x.GeneIndex));
             Console.WriteLine(Solution.Serialize());
+            Solution.CalculateFitness(Collision, Buildings, Towers, TowerChargeHelpers.ToDictionary(x => x.GeneIndex));
             return Solution;
         }
         /// <summary>
@@ -135,10 +136,12 @@ namespace TowerCraneGroup.Services
             for (int geneIndex = 0; geneIndex < thisBuilding.Process.Count; geneIndex++)
             {
                 double buildingHeight = thisBuilding.GetHeightByFloorIndex(geneIndex) + GetSecurityHeight();
-                DateTime thisLiftingTime = thisBuilding.Process.Keys.ToList()[geneIndex];
 
-                if (buildingHeight > height || (highestTower > height && height > thisBuilding.GetFinalStructureHeighth()))
+                var before = LiftBefore(exisedTowerIds, buildingId, height, thisBuilding.GetDateTimeByFloorIndex(geneIndex));
+
+                if (buildingHeight > height || (before.Item1 && before.Item2 == thisBuilding.GetDateTimeByFloorIndex(geneIndex)) || (highestTower > height && height > thisBuilding.GetFinalStructureHeighth()))
                 {
+                    DateTime thisLiftingTime = thisBuilding.Process.Keys.ToList()[geneIndex - 1];
                     //查找剩余需要提升的节数，如果小于当前附墙次数最大提升节数，则替代
                     int remainSectionNum = (int)Math.Ceiling((Math.Max(highestTower, thisBuilding.GetFinalStructureHeighth() + GetSecurityHeight()) - height) / thisTower.SectionHeight);
                     int liftSectionNum = thisTower.LiftSectionNumDic[liftingIndex];
@@ -150,7 +153,7 @@ namespace TowerCraneGroup.Services
                     for (int i = liftSectionNum; i > 0; i--)
                     {
                         double afterLiftingHeight = height + liftSectionNum * thisTower.SectionHeight;
-                        if (TryLifting(towerId, exisedTowerIds, thisLiftingTime, afterLiftingHeight))
+                        if (TryLifting(exisedTowerIds, thisLiftingTime, afterLiftingHeight))
                         {
                             result[geneIndex - 1] = liftSectionNum;
                             result.Add(0);
@@ -165,7 +168,42 @@ namespace TowerCraneGroup.Services
                     }
                     if (liftSectionNum == 0)
                     {
-                        throw new ArgumentException("无法降节提升");
+                        int doubleLiftSectionNum = thisTower.LiftSectionNumDic[liftingIndex] + thisTower.LiftSectionNumDic[liftingIndex + 1];
+                        liftSectionNum = thisTower.LiftSectionNumDic[liftingIndex];
+
+                        for (int i = liftSectionNum; i < doubleLiftSectionNum; i++)
+                        {
+                            double afterLiftingHeight = height + liftSectionNum * thisTower.SectionHeight;
+                            if (TryLifting(exisedTowerIds, thisLiftingTime, afterLiftingHeight))
+                            {
+                                result[geneIndex - 1] = liftSectionNum;
+                                result.Add(0);
+                                height = afterLiftingHeight;
+                                liftingIndex++;
+                                break;
+                            }
+                            else
+                            {
+                                liftSectionNum++;
+                            }
+                        }
+                        if (liftSectionNum > doubleLiftSectionNum)
+                        {
+                            double needHeight = GetHeightLiftingOverMax(exisedTowerIds, thisLiftingTime) + GetSecurityHeight() - height;
+                            int sectionNum = (int)Math.Ceiling(needHeight / thisTower.SectionHeight);
+                            double afterLiftingHeight = height + sectionNum * thisTower.SectionHeight;
+                            if (TryLifting(exisedTowerIds, thisLiftingTime, afterLiftingHeight))
+                            {
+                                result[geneIndex - 1] = sectionNum;
+                                result.Add(0);
+                                height = afterLiftingHeight;
+                                liftingIndex++;
+                            }
+                            else
+                            {
+                                throw new ArgumentException("无法提升");
+                            }
+                        }
                     }
                 }
                 else
@@ -177,6 +215,89 @@ namespace TowerCraneGroup.Services
         }
 
         /// <summary>
+        /// 是否需要提前提升，提前提升的最后时间点
+        /// </summary>
+        /// <param name="collisionIds">碰撞范围内已生成方案的塔吊</param>
+        /// <param name="buildingId">正在生成方案的塔吊的主控楼宇</param>
+        /// <param name="height">正在生成方案的塔吊的高度</param>
+        /// <param name="liftTime">正在生成方案的塔吊的当前时间</param>
+        /// <returns>true，需要提前提升</returns>
+        private (bool, DateTime) LiftBefore(List<int> collisionIds, int buildingId, double height, DateTime liftTime)
+        {
+            DateTime? earliest = null;
+            var towerChargeDic = TowerChargeHelpers.ToDictionary(x => x.TowerId);
+            foreach (int collision in collisionIds)
+            {
+                if (towerChargeDic.TryGetValue(collision, out var towerInfo))
+                {
+                    double currentHeight = towerInfo.TowerStartHeight;
+                    for (int floorFinishIndex = 0; floorFinishIndex < Solution.Genes[towerInfo.GeneIndex].Count; floorFinishIndex++)
+                    {
+                        int liftSectionNum = Solution.Genes[towerInfo.GeneIndex][floorFinishIndex];
+                        if (liftSectionNum != 0)
+                        {
+                            currentHeight += liftSectionNum * towerInfo.TowerSectionLength;
+                            if (BetweenSecrity(height, currentHeight))
+                            {
+                                var date = Buildings[towerInfo.BuildingId].Process.Keys.ToList()[floorFinishIndex];
+                                if (date > liftTime)
+                                {
+                                    if (earliest is null || earliest > date)
+                                        earliest = date;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                }
+
+            }
+            if (earliest is null)
+                return (false, new DateTime());
+            else
+            {
+                DateTime result = Buildings[buildingId].Process.Keys.OrderBy(x => x).LastOrDefault(x => x < earliest.Value);
+                return (true, result);
+            }
+        }
+
+        private double GetHeightLiftingOverMax(List<int> collisionIds, DateTime liftTime)
+        {
+            var towerChargeDic = TowerChargeHelpers.ToDictionary(x => x.TowerId);
+
+            //找到被检测塔吊范围内，下一次提升后最高的一个塔吊的高度
+            double result = 0;
+            foreach (int collision in collisionIds)
+            {
+                if (towerChargeDic.TryGetValue(collision, out var towerInfo))
+                {
+                    BuildingProcessing thisBuilding = Buildings[towerInfo.BuildingId];
+                    TowerCrane thisTower = Towers[towerInfo.TowerId];
+                    DateTime temTime = thisBuilding.Process.Keys.LastOrDefault(x => x <= liftTime);
+                    int timeIndex = thisBuilding.Process.Keys.ToList().IndexOf(temTime);
+                    if (!(thisTower.StartTime > liftTime || thisTower.EndTime < liftTime))
+                    {
+                        double lastHeight = towerInfo.TowerStartHeight;
+                        for (int i = 0; i < Solution.Genes[towerInfo.GeneIndex].Count; i++)
+                        {
+                            if (Solution.Genes[towerInfo.GeneIndex][i] > 0)
+                            {
+                                lastHeight += towerInfo.TowerSectionLength * Solution.Genes[towerInfo.GeneIndex][i];
+                                if (i > timeIndex)
+                                { break; }
+                            }
+                        }
+                        if (lastHeight > result)
+                            result = lastHeight;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// <para>尝试提升塔吊</para>
         /// </summary>
         /// <param name="towerId">尝试提升的塔吊</param>
@@ -184,7 +305,7 @@ namespace TowerCraneGroup.Services
         /// <param name="liftTime">提升时间</param>
         /// <param name="afterLift">提升后的高度</param>
         /// <returns>true 可以提升，false 提升失败</returns>
-        private bool TryLifting(int towerId, List<int> collisionIds, DateTime liftTime, double afterLift)
+        private bool TryLifting(List<int> collisionIds, DateTime liftTime, double afterLift)
         {
             var towerChargeDic = TowerChargeHelpers.ToDictionary(x => x.TowerId);
             foreach (int collision in collisionIds)
@@ -192,7 +313,7 @@ namespace TowerCraneGroup.Services
                 towerChargeDic.TryGetValue(collision, out var towerInfo);
                 BuildingProcessing thisBuilding = Buildings[towerInfo.BuildingId];
                 TowerCrane thisTower = Towers[towerInfo.TowerId];
-                DateTime temTime = thisBuilding.Process.Keys.FirstOrDefault(x => x <= liftTime);
+                DateTime temTime = thisBuilding.Process.Keys.LastOrDefault(x => x <= liftTime);
                 int timeIndex = thisBuilding.Process.Keys.ToList().IndexOf(temTime);
                 if (!(thisTower.StartTime > liftTime || thisTower.EndTime < liftTime))
                 {
