@@ -18,7 +18,10 @@ namespace TowerCraneGroup.InputModels
 
         public double GetHeightByFloorIndex(int floorIndex)
         {
-            return Process.Values.ToList()[floorIndex];
+            if (floorIndex >= this.Process.Values.Count)
+                return this.Process.Values.ToList()[floorIndex - 1];
+            else
+                return Process.Values.ToList()[floorIndex];
         }
 
         public DateTime GetDateTimeByFloorIndex(int floorIndex)

@@ -130,21 +130,27 @@ namespace TowerCraneGroup.Services
             //塔吊的当前高度
             double height = thisTower.StartHeight;
             //塔吊当前提升次数
-            int liftingIndex = 1;
+            int liftNumIndex = 1;
 
 
             for (int geneIndex = 0; geneIndex < thisBuilding.Process.Count; geneIndex++)
             {
-                double buildingHeight = thisBuilding.GetHeightByFloorIndex(geneIndex) + GetSecurityHeight();
+                double buildingHeight = thisBuilding.GetHeightByFloorIndex(geneIndex + 1) + GetSecurityHeight();
 
                 var before = LiftBefore(exisedTowerIds, buildingId, height, thisBuilding.GetDateTimeByFloorIndex(geneIndex));
 
-                if (buildingHeight > height || (before.Item1 && before.Item2 == thisBuilding.GetDateTimeByFloorIndex(geneIndex)) || (highestTower > height && height > thisBuilding.GetFinalStructureHeighth()))
+                if (buildingHeight > height || (before.Item1 && before.Item2 == thisBuilding.GetDateTimeByFloorIndex(geneIndex)))
                 {
-                    DateTime thisLiftingTime = thisBuilding.Process.Keys.ToList()[geneIndex - 1];
+                    DateTime thisLiftingTime = thisBuilding.GetDateTimeByFloorIndex(geneIndex);
+
+                    //按高度检测时，当前楼层高度与塔吊不满足安全要求，则应在上一层进行提升
+                    //按其它塔吊提前提升时，则应在本层提升
+                    //统一二者，将提升的序号加1
+
+
                     //查找剩余需要提升的节数，如果小于当前附墙次数最大提升节数，则替代
                     int remainSectionNum = (int)Math.Ceiling((Math.Max(highestTower, thisBuilding.GetFinalStructureHeighth() + GetSecurityHeight()) - height) / thisTower.SectionHeight);
-                    int liftSectionNum = thisTower.LiftSectionNumDic[liftingIndex];
+                    int liftSectionNum = thisTower.LiftSectionNumDic[liftNumIndex];
                     if (remainSectionNum < liftSectionNum)
                     {
                         liftSectionNum = remainSectionNum;
@@ -155,10 +161,9 @@ namespace TowerCraneGroup.Services
                         double afterLiftingHeight = height + liftSectionNum * thisTower.SectionHeight;
                         if (TryLifting(exisedTowerIds, thisLiftingTime, afterLiftingHeight))
                         {
-                            result[geneIndex - 1] = liftSectionNum;
-                            result.Add(0);
+                            result.Add(liftSectionNum);
                             height = afterLiftingHeight;
-                            liftingIndex++;
+                            liftNumIndex++;
                             break;
                         }
                         else
@@ -168,18 +173,17 @@ namespace TowerCraneGroup.Services
                     }
                     if (liftSectionNum == 0)
                     {
-                        int doubleLiftSectionNum = thisTower.LiftSectionNumDic[liftingIndex] + thisTower.LiftSectionNumDic[liftingIndex + 1];
-                        liftSectionNum = thisTower.LiftSectionNumDic[liftingIndex];
+                        int doubleLiftSectionNum = thisTower.LiftSectionNumDic[liftNumIndex] + thisTower.LiftSectionNumDic[liftNumIndex + 1];
+                        liftSectionNum = thisTower.LiftSectionNumDic[liftNumIndex];
 
                         for (int i = liftSectionNum; i < doubleLiftSectionNum; i++)
                         {
                             double afterLiftingHeight = height + liftSectionNum * thisTower.SectionHeight;
                             if (TryLifting(exisedTowerIds, thisLiftingTime, afterLiftingHeight))
                             {
-                                result[geneIndex - 1] = liftSectionNum;
-                                result.Add(0);
+                                result.Add(liftSectionNum);
                                 height = afterLiftingHeight;
-                                liftingIndex++;
+                                liftNumIndex++;
                                 break;
                             }
                             else
@@ -194,10 +198,9 @@ namespace TowerCraneGroup.Services
                             double afterLiftingHeight = height + sectionNum * thisTower.SectionHeight;
                             if (TryLifting(exisedTowerIds, thisLiftingTime, afterLiftingHeight))
                             {
-                                result[geneIndex - 1] = sectionNum;
-                                result.Add(0);
+                                result.Add(sectionNum);
                                 height = afterLiftingHeight;
-                                liftingIndex++;
+                                liftNumIndex++;
                             }
                             else
                             {
