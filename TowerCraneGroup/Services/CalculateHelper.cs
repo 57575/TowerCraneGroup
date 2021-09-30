@@ -31,7 +31,7 @@ namespace TowerCraneGroup.Services
                     .OrderBy(x => x.StartTime)
                     .FirstOrDefault().Id;
 
-                if (towersDic[aTower.Key].IndependentHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth())
+                if (towersDic[aTower.Key].StartHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth())
                 {
                     var result = new TowerChargeBuilding
                     {

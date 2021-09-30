@@ -11,10 +11,17 @@ namespace TowerCraneGroup.InputModels
         /// 楼宇编号
         /// </summary>
         public int Id { get; set; }
+
+        public string BuildingCode { get; set; }
         /// <summary>
         /// 楼宇的进度计划，即达到X米的时间T
         /// </summary>
         public Dictionary<DateTime, double> Process { get; set; }
+
+        public BuildingProcessing()
+        {
+            Process = new Dictionary<DateTime, double>();
+        }
 
         public double GetHeightByFloorIndex(int floorIndex)
         {

@@ -7,7 +7,16 @@ namespace TowerCraneGroup.Entities
 {
     public class TowerCrane
     {
+        public TowerCrane()
+        {
+            LiftSectionNumDic = new Dictionary<int, int>();
+        }
+
         public int Id { get; set; }
+        /// <summary>
+        /// 塔吊型号
+        /// </summary>
+        public string Code { get; set; }
         /// <summary>
         /// 最大独立高度
         /// </summary>

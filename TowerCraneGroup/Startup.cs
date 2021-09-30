@@ -27,7 +27,9 @@ namespace TowerCraneGroup
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            DemoService demoService = new DemoService(21);
+            CHJDemo cHJDemo = new CHJDemo();
+            cHJDemo.Run();
+            //DemoService demoService = new DemoService(21);
             //demoService.Run();
             //demoService.DebugServe();
             //demoService.GreedyServe();

@@ -68,6 +68,10 @@ namespace TowerCraneGroup.Services
                 TowerChargeHelpers.Add(towerChargeHelper);
                 Solution.Genes.Add(gene);
                 towerId = GetLatestTower(collisionableTowerIds);
+                if (towerId == 0 && geneIndex < Towers.Count - 1)
+                {
+                    throw new ArgumentException("error");
+                }
             }
             //Solution.CalculateFitness(Collision, Buildings, Towers, TowerChargeHelpers.ToDictionary(x => x.GeneIndex));
             Console.WriteLine(Solution.Serialize());
@@ -425,8 +429,18 @@ namespace TowerCraneGroup.Services
         /// <returns></returns>
         private int GetLatestTower(List<int> towerIds)
         {
-            var ids = towerIds.Except(TowerChargeHelpers.Select(x => x.TowerId));
-            return FinishTimeTowers.Where(x => ids.Contains(x.TowerId)).OrderByDescending(x => x.Time).ToList().FirstOrDefault().TowerId;
+            List<int> ids = towerIds.Except(TowerChargeHelpers.Select(x => x.TowerId)).ToList();
+            int result = 0;
+            if (ids != null && ids.Count != 0)
+            {
+                result = FinishTimeTowers.Where(x => ids.Contains(x.TowerId)).OrderByDescending(x => x.Time).ToList().FirstOrDefault().TowerId;
+            }
+            else
+            {
+                List<int> existedTowerIds = TowerChargeHelpers.Select(x => x.TowerId).ToList();
+                result = FinishTimeTowers.Where(x => !existedTowerIds.Contains(x.TowerId)).OrderByDescending(x => x.Time).ToList().FirstOrDefault().TowerId;
+            }
+            return result;
         }
 
         /// <summary>
@@ -452,6 +466,27 @@ namespace TowerCraneGroup.Services
             public int TowerId { get; set; }
         }
 
+
+        public void PrintSolution()
+        {
+            Towers.ToList().ForEach(tower =>
+            {
+                var charge = TowerChargeHelpers.Where(x => x.TowerId == tower.Value.Id).FirstOrDefault();
+                var building = Buildings[charge.BuildingId];
+                Console.WriteLine("塔吊:" + tower.Value.Code + "\t" + "初始高度:" + charge.TowerStartHeight + "\t" + "塔吊主控楼宇:" + building.BuildingCode);
+
+                var process = building.Process.ToList();
+                for (int floorId = 0; floorId < process.Count; floorId++)
+                {
+                    double towerHeight = charge.TowerStartHeight;
+                    for (int geneIndex = 0; geneIndex <= floorId; geneIndex++)
+                    {
+                        towerHeight += charge.TowerSectionLength * Solution.Genes[charge.GeneIndex][geneIndex];
+                    }
+                    Console.WriteLine("时间:" + process[floorId].Key.ToString("yyyyMMdd") + "\t" + "楼宇高度:" + process[floorId].Value + "\t" + "塔吊高度:" + towerHeight);
+                }
+            });
+        }
 
     }
 
