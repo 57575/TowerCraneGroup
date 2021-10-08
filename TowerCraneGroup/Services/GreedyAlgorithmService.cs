@@ -78,6 +78,12 @@ namespace TowerCraneGroup.Services
             Solution.CalculateFitness(Collision, Buildings, Towers, TowerChargeHelpers.ToDictionary(x => x.GeneIndex));
             return Solution;
         }
+
+        public List<TowerChargeHelper> GetTowerChargeHelpers()
+        {
+            return TowerChargeHelpers;
+        }
+
         /// <summary>
         /// <para>若该塔吊范围内暂无其它塔吊方案,则该塔吊仅以建筑为约束进行提升</para>
         /// <para>并生成相关基因</para>        

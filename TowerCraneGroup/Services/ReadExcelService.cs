@@ -4,32 +4,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
 using TowerCraneGroup.SolutionModels;
 
 namespace TowerCraneGroup.Services
 {
-    public class CHJDemo
+    public static class ReadExcelService
     {
-        public void Run()
-        {
-            List<BuildingProcessing> buildings = ReadBuildingExcel();
-            List<TowerCrane> towers = ReadTowers();
-            List<CollisionRelation> collision = ReadCollision(buildings.ToDictionary(x => x.BuildingCode, x => x.Id), towers.ToDictionary(x => x.Code, x => x.Id));
-            Dictionary<int, List<CollisionRelation>> collisionDic = collision.GroupBy(x => x.TowerId).ToDictionary(x => x.Key, x => x.ToList());
-            List<TowerChargeBuilding> TowerChargeBuildings = CalculateHelper.CalculteTowerChargeBuilding(buildings, collisionDic, towers.ToDictionary(x => x.Id));
-            InitialTowers(towers, buildings, TowerChargeBuildings);
-            Console.WriteLine("完成数据准备");
-
-            GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towers.ToDictionary(x => x.Id), TowerChargeBuildings, buildings.ToDictionary(x => x.Id), collisionDic);
-
-            Individual individual= greedyAlgorithmService.RunService();
-
-            greedyAlgorithmService.PrintSolution();
-        }
-
-        private void InitialTowers(List<TowerCrane> towers, List<BuildingProcessing> buildings, List<TowerChargeBuilding> TowerChargeBuildings)
+        static public void InitialTowers(List<TowerCrane> towers, List<BuildingProcessing> buildings, List<TowerChargeBuilding> TowerChargeBuildings)
         {
             towers.ForEach(x =>
             {
@@ -62,12 +46,11 @@ namespace TowerCraneGroup.Services
                 }
             });
         }
-
-        private List<BuildingProcessing> ReadBuildingExcel()
+        static public List<BuildingProcessing> ReadBuildingExcel(string path)
         {
             List<BuildingProcessing> results = new List<BuildingProcessing>();
 
-            FileStream stream = new FileStream(@"D:\work\CraneTowerGroup\施工进度信息表(2).xlsx", FileMode.Open);
+            FileStream stream = new FileStream(path, FileMode.Open);
 
             var workbook = new XSSFWorkbook(stream);
 
@@ -117,11 +100,10 @@ namespace TowerCraneGroup.Services
 
             return results;
         }
-
-        private List<TowerCrane> ReadTowers()
+        static public List<TowerCrane> ReadTowers(string path)
         {
             List<TowerCrane> results = new List<TowerCrane>();
-            FileStream stream = new FileStream(@"D:\work\CraneTowerGroup\塔吊信息表格0924.xlsx", FileMode.Open);
+            FileStream stream = new FileStream(path, FileMode.Open);
             var workbook = new XSSFWorkbook(stream);
             var sheet = workbook.GetSheetAt(0);
             for (int rowIndex = sheet.FirstRowNum + 1; rowIndex <= sheet.LastRowNum; rowIndex++)
@@ -150,11 +132,10 @@ namespace TowerCraneGroup.Services
             }
             return results;
         }
-
-        private List<CollisionRelation> ReadCollision(Dictionary<string, int> buildings, Dictionary<string, int> towers)
+        static public List<CollisionRelation> ReadCollision(string path, Dictionary<string, int> buildings, Dictionary<string, int> towers)
         {
             List<CollisionRelation> results = new List<CollisionRelation>();
-            FileStream stream = new FileStream(@"D:\work\CraneTowerGroup\塔吊信息表格0924.xlsx", FileMode.Open);
+            FileStream stream = new FileStream(path, FileMode.Open);
             XSSFWorkbook workbook = new XSSFWorkbook(stream);
             ISheet sheet = workbook.GetSheetAt(0);
             for (int rowIndex = sheet.FirstRowNum + 1; rowIndex <= sheet.LastRowNum; rowIndex++)

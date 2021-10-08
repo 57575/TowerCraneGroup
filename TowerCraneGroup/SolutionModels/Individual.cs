@@ -70,14 +70,31 @@ namespace TowerCraneGroup.SolutionModels
                 };
             Genes.Add(tower3);
         }
-        public Individual(Dictionary<int, TowerCrane> towerInfo, List<TowerChargeBuilding> towerCharge, Dictionary<int, BuildingProcessing> buildings)
+        public Individual(Dictionary<int, TowerCrane> towerInfo, List<TowerChargeBuilding> towerChargeHelper, Dictionary<int, BuildingProcessing> buildings)
         {
             Random random = new Random();
             Genes = new List<List<int>>();
             //TowerChargeDic = new Dictionary<int, TowerChargeHelper>();
 
             //对每个塔吊生产基因段，组合成染色体
-            foreach (var tower in towerCharge)
+            foreach (var tower in towerChargeHelper)
+            {
+                int max = towerInfo[tower.TowerId].LiftSectionNumDic.Values.Max();
+                int length = buildings[tower.BuildingId].Process.Count;
+                int geneIndex = GenerateATowerGene(random, max, length, towerInfo[tower.TowerId].StartHeight, towerInfo[tower.TowerId].SectionHeight);
+                //TowerChargeHelper aHelper = new TowerChargeHelper(geneIndex, tower, length, towerInfo[tower.TowerId].SectionHeight, towerInfo[tower.TowerId].StartHeight);
+                //TowerChargeDic.Add(aHelper.GeneIndex, aHelper);
+            }
+            Fitness = 0;
+        }
+        public Individual(Dictionary<int, TowerCrane> towerInfo, List<TowerChargeHelper> towerChargeHelper, Dictionary<int, BuildingProcessing> buildings)
+        {
+            Random random = new Random();
+            Genes = new List<List<int>>();
+            //TowerChargeDic = new Dictionary<int, TowerChargeHelper>();
+
+            //对每个塔吊生产基因段，组合成染色体
+            foreach (var tower in towerChargeHelper)
             {
                 int max = towerInfo[tower.TowerId].LiftSectionNumDic.Values.Max();
                 int length = buildings[tower.BuildingId].Process.Count;
@@ -144,6 +161,10 @@ namespace TowerCraneGroup.SolutionModels
             var low = LowThanNeedNumber(buildingDic, towerChargeDic);
             var building = BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
             var tower = TowerCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
+            if (maxLiftCount < 40)
+            {
+                maxLiftCount = 40;
+            }
             Fitness += maxLiftCount * building + maxLiftCount * tower + 10 * lift + 5 * higher + 40 * low;
         }
         /// <summary>
@@ -604,6 +625,28 @@ namespace TowerCraneGroup.SolutionModels
         public string Serialize()
         {
             return JsonConvert.SerializeObject(this);
+        }
+
+
+        public void Print(List<TowerCrane> towers, List<TowerChargeHelper> towerChargeHelpers, Dictionary<int, BuildingProcessing> buildingsDic)
+        {
+            towers.ForEach(tower =>
+            {
+                var charge = towerChargeHelpers.Where(x => x.TowerId == tower.Id).FirstOrDefault();
+                var building = buildingsDic[charge.BuildingId];
+                Console.WriteLine("塔吊:" + tower.Code + "\t" + "初始高度:" + charge.TowerStartHeight + "\t" + "塔吊主控楼宇:" + building.BuildingCode);
+
+                var process = building.Process.ToList();
+                for (int floorId = 0; floorId < process.Count; floorId++)
+                {
+                    double towerHeight = charge.TowerStartHeight;
+                    for (int geneIndex = 0; geneIndex <= floorId; geneIndex++)
+                    {
+                        towerHeight += charge.TowerSectionLength * this.Genes[charge.GeneIndex][geneIndex];
+                    }
+                    Console.WriteLine("时间:" + process[floorId].Key.ToString("yyyyMMdd") + "\t" + "楼宇高度:" + process[floorId].Value + "\t" + "塔吊高度:" + towerHeight);
+                }
+            });
         }
     }
 }

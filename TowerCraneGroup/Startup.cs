@@ -27,8 +27,11 @@ namespace TowerCraneGroup
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            CHJDemo cHJDemo = new CHJDemo();
-            cHJDemo.Run();
+            TrueServe trueServe = new TrueServe(21);
+            trueServe.RunServe(@"D:\work\CraneTowerGroup\施工进度信息表(2).xlsx", @"D:\work\CraneTowerGroup\塔吊信息表格0924.xlsx");
+
+            //CHJDemo cHJDemo = new CHJDemo();
+            //cHJDemo.Run();
             //DemoService demoService = new DemoService(21);
             //demoService.Run();
             //demoService.DebugServe();
