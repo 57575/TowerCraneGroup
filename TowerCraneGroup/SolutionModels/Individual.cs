@@ -634,7 +634,7 @@ namespace TowerCraneGroup.SolutionModels
             {
                 var charge = towerChargeHelpers.Where(x => x.TowerId == tower.Id).FirstOrDefault();
                 var building = buildingsDic[charge.BuildingId];
-                Console.WriteLine("塔吊:" + tower.Code + "\t" + "初始高度:" + charge.TowerStartHeight + "\t" + "塔吊主控楼宇:" + building.BuildingCode);
+                Console.WriteLine("塔吊:" + tower.Code + "\t" + "初始高度:" + charge.TowerStartHeight + "\t" + "塔吊主控楼宇:" + building.BuildingCode + "\t" + "塔吊独立高度:" + tower.IndependentHeight);
 
                 var process = building.Process.ToList();
                 for (int floorId = 0; floorId < process.Count; floorId++)

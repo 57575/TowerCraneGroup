@@ -20,16 +20,16 @@ namespace TowerCraneGroup.Services
             PopSize = popSize;
             GenerationCount = 0;
         }
-        public void RunServe(string buildingPath, string towerPath)
+        public void RunServe(string buildingPath, string towerPath, string attachPath)
         {
-            RunGreedyServe(buildingPath, towerPath);
+            RunGreedyServe(buildingPath, towerPath, attachPath);
         }
 
-        private void RunGreedyServe(string buildingPath, string towerPath)
+        private void RunGreedyServe(string buildingPath, string towerPath, string attachPath)
         {
-            List<BuildingProcessing> buildings = ReadExcelService.ReadBuildingExcel(buildingPath);
+            List<BuildingProcessing> buildings = ReadExcelService.ReadBuilding(buildingPath);
             var buildingDic = buildings.ToDictionary(x => x.Id);
-            List<TowerCrane> towers = ReadExcelService.ReadTowers(towerPath);
+            List<TowerCrane> towers = ReadExcelService.ReadTowers(towerPath, attachPath);
             var towerDic = towers.ToDictionary(x => x.Id);
             List<CollisionRelation> collision = ReadExcelService.ReadCollision(towerPath, buildings.ToDictionary(x => x.BuildingCode, x => x.Id), towers.ToDictionary(x => x.Code, x => x.Id));
             Dictionary<int, List<CollisionRelation>> collisionDic = collision.GroupBy(x => x.TowerId).ToDictionary(x => x.Key, x => x.ToList());
@@ -101,6 +101,7 @@ namespace TowerCraneGroup.Services
             string solutionStr = JsonConvert.SerializeObject(solution);
             Console.WriteLine("Solution:" + solutionStr);
             solution.Print(towers, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic);
+            CalculateAttach.CalculateAndPrint(solution, towers, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic);
             Console.WriteLine("DONE");
 
         }

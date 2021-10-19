@@ -46,7 +46,7 @@ namespace TowerCraneGroup.Services
                 }
             });
         }
-        static public List<BuildingProcessing> ReadBuildingExcel(string path)
+        static public List<BuildingProcessing> ReadBuilding(string path)
         {
             List<BuildingProcessing> results = new List<BuildingProcessing>();
 
@@ -100,7 +100,7 @@ namespace TowerCraneGroup.Services
 
             return results;
         }
-        static public List<TowerCrane> ReadTowers(string path)
+        static public List<TowerCrane> ReadTowers(string path, string attachPath)
         {
             List<TowerCrane> results = new List<TowerCrane>();
             FileStream stream = new FileStream(path, FileMode.Open);
@@ -130,6 +130,7 @@ namespace TowerCraneGroup.Services
                 }
                 results.Add(tower);
             }
+            ReadTowerAttach(attachPath, results);
             return results;
         }
         static public List<CollisionRelation> ReadCollision(string path, Dictionary<string, int> buildings, Dictionary<string, int> towers)
@@ -178,6 +179,31 @@ namespace TowerCraneGroup.Services
                 });
             }
             return results;
+        }
+        static public void ReadTowerAttach(string path, List<TowerCrane> towers)
+        {
+            FileStream stream = new FileStream(path, FileMode.Open);
+            XSSFWorkbook workbook = new XSSFWorkbook(stream);
+            ISheet sheet = workbook.GetSheetAt(0);
+            for (int rowIndex = sheet.FirstRowNum + 1; rowIndex <= sheet.LastRowNum; rowIndex++)
+            {
+                IRow row = sheet.GetRow(rowIndex);
+                string towerCode = row.GetCell(0).StringCellValue;
+                TowerCrane thisTower = towers.FirstOrDefault(x => x.Code == towerCode);
+                thisTower.AttachSegments = new List<AttachSegment>();
+                for (int cellNum = 1; cellNum < row.LastCellNum; cellNum++)
+                {
+                    string str = row.GetCell(cellNum).StringCellValue;
+                    double lowerBound = double.Parse(str.Split("、").First());
+                    double upperBound = double.Parse(str.Split("、").Last());
+                    thisTower.AttachSegments.Add(new AttachSegment
+                    {
+                        Index = cellNum,
+                        LowerBound = lowerBound,
+                        UpperBound = upperBound
+                    });
+                }
+            }
         }
     }
 }

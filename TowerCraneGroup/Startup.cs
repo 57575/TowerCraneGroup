@@ -28,7 +28,10 @@ namespace TowerCraneGroup
         {
             services.AddControllers();
             TrueServe trueServe = new TrueServe(21);
-            trueServe.RunServe(@"D:\work\CraneTowerGroup\施工进度信息表(2).xlsx", @"D:\work\CraneTowerGroup\塔吊信息表格0924.xlsx");
+            trueServe.RunServe(
+                @"G:\成果\群塔施工\漕河泾\施工进度信息表(2).xlsx",
+                @"G:\成果\群塔施工\漕河泾\塔吊信息表格1018.xlsx",
+                @"G:\成果\群塔施工\漕河泾\塔吊附着信息.xlsx");
 
             //CHJDemo cHJDemo = new CHJDemo();
             //cHJDemo.Run();
