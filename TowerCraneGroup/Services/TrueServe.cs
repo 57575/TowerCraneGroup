@@ -72,13 +72,16 @@ namespace TowerCraneGroup.Services
                 {
                     Individual son1, son2;
                     (son1, son2) = Population.Crossover();
+
+                    int mutationNum = (int)Math.Floor(son1.Genes.Sum(x => x.Count) * 0.1);
+
                     if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 1.0)))
                     {
-                        son1.Mutation(18, buildingDic, towerChargeHelper);
+                        son1.Mutation(mutationNum, buildingDic, towerChargeHelper);
                     }
                     if (random.Next(0, PopSize) < Math.Ceiling((PopSize / 1.0)))
                     {
-                        son2.Mutation(18, buildingDic, towerChargeHelper);
+                        son2.Mutation(mutationNum, buildingDic, towerChargeHelper);
                     }
                     Individual newSon1 = new Individual();
                     newSon1 = JsonConvert.DeserializeObject<Individual>(son1.Serialize());
