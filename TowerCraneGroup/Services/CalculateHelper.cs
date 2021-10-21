@@ -31,7 +31,7 @@ namespace TowerCraneGroup.Services
                     .OrderBy(x => x.StartTime)
                     .FirstOrDefault().Id;
 
-                if (towersDic[aTower.Key].StartHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth())
+                if (towersDic[aTower.Key].StartHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth()+GetSecurityHeight())
                 {
                     var result = new TowerChargeBuilding
                     {
@@ -45,6 +45,10 @@ namespace TowerCraneGroup.Services
             return results;
         }
 
+        public static double GetSecurityHeight()
+        {
+            return 8.00;
+        }
 
         public static int CalculateTowerMaxLiftSection() { return 0; }
 
