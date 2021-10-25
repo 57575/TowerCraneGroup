@@ -20,12 +20,12 @@ namespace TowerCraneGroup.Services
             PopSize = popSize;
             GenerationCount = 0;
         }
-        public void RunServe(string buildingPath, string towerPath, string attachPath)
+        public void RunServe(string buildingPath, string towerPath, string attachPath, Dictionary<int, int> genOrder = null)
         {
-            RunGreedyServe(buildingPath, towerPath, attachPath);
+            RunGreedyServe(buildingPath, towerPath, attachPath, genOrder);
         }
 
-        private void RunGreedyServe(string buildingPath, string towerPath, string attachPath)
+        private void RunGreedyServe(string buildingPath, string towerPath, string attachPath, Dictionary<int, int> genOrder = null)
         {
             List<BuildingProcessing> buildings = ReadExcelService.ReadBuilding(buildingPath);
             var buildingDic = buildings.ToDictionary(x => x.Id);
@@ -37,7 +37,7 @@ namespace TowerCraneGroup.Services
             ReadExcelService.InitialTowers(towers, buildings, TowerChargeBuildings);
             Console.WriteLine("完成数据准备");
 
-            GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towerDic, TowerChargeBuildings, buildingDic, collisionDic);
+            GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towerDic, TowerChargeBuildings, buildingDic, collisionDic, genOrder);
 
             Individual greedyIndividual = greedyAlgorithmService.RunService();
             Population = new Population(PopSize, towerDic, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic, collisionDic, false);

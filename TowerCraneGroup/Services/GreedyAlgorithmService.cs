@@ -18,11 +18,13 @@ namespace TowerCraneGroup.Services
         private List<FinishTimeHelper> FinishTimeTowers { get; set; }
         private List<TowerChargeHelper> TowerChargeHelpers { get; set; }
         private Individual Solution { get; set; }
+        private Dictionary<int, int> GenerateOrder { get; set; }
         public GreedyAlgorithmService(
             Dictionary<int, TowerCrane> towerInfo,
             List<TowerChargeBuilding> towerCharge,
             Dictionary<int, BuildingProcessing> buildings,
-            Dictionary<int, List<CollisionRelation>> collisionsDic
+            Dictionary<int, List<CollisionRelation>> collisionsDic,
+            Dictionary<int, int> generateOrder = null
             )
         {
             Towers = towerInfo;
@@ -41,11 +43,19 @@ namespace TowerCraneGroup.Services
                 };
                 FinishTimeTowers.Add(finishTimeHelper);
             });
+            if (generateOrder != null && generateOrder.Count != 0)
+            {
+                GenerateOrder = new Dictionary<int, int>();
+                generateOrder.ToList().ForEach(x =>
+                {
+                    GenerateOrder.Add(x.Key, x.Value);
+                });
+            }
         }
 
         public Individual RunService()
         {
-            int towerId = GetLatestTower(0);
+            int towerId = GetGenerateOrder(0);
             for (int geneIndex = 0; geneIndex < Towers.Count; geneIndex++)
             {
                 TowerCrane towerCrane = Towers[towerId];
@@ -67,7 +77,10 @@ namespace TowerCraneGroup.Services
                 TowerChargeHelper towerChargeHelper = new TowerChargeHelper(geneIndex, towerId, chargeBuildingId, building.Process.Count, towerCrane.SectionHeight, towerCrane.StartHeight);
                 TowerChargeHelpers.Add(towerChargeHelper);
                 Solution.Genes.Add(gene);
-                towerId = GetLatestTower(collisionableTowerIds);
+                if (geneIndex + 1 < Towers.Count)
+                {
+                    towerId = GetGenerateOrder(geneIndex + 1);
+                }
                 if (towerId == 0 && geneIndex < Towers.Count - 1)
                 {
                     throw new ArgumentException("error");
@@ -485,6 +498,14 @@ namespace TowerCraneGroup.Services
             int result = FinishTimeTowers.Where(x => !ids.Contains(x.TowerId)).OrderByDescending(x => x.Time).ToList().FirstOrDefault().TowerId;
 
             return result;
+        }
+
+        private int GetGenerateOrder(int i)
+        {
+            if (GenerateOrder is null || GenerateOrder.Count == 0)
+                return GetLatestTower(new List<int>());
+            else
+                return GenerateOrder[i];
         }
 
         /// <summary>
