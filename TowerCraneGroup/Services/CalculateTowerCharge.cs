@@ -8,7 +8,7 @@ using TowerCraneGroup.SolutionModels;
 
 namespace TowerCraneGroup.Services
 {
-    public static class CalculateHelper
+    public static class CalculateTowerCharge
     {
         /// <summary>
         /// 计算塔吊负责的关键楼宇
