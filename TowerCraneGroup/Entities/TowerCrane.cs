@@ -7,7 +7,16 @@ namespace TowerCraneGroup.Entities
 {
     public class TowerCrane
     {
+        public TowerCrane()
+        {
+            LiftSectionNumDic = new Dictionary<int, int>();
+        }
+
         public int Id { get; set; }
+        /// <summary>
+        /// 塔吊编号
+        /// </summary>
+        public string Code { get; set; }
         /// <summary>
         /// 最大独立高度
         /// </summary>
@@ -33,8 +42,23 @@ namespace TowerCraneGroup.Entities
         /// </summary>
         public Dictionary<int, int> LiftSectionNumDic { get; set; }
         /// <summary>
+        /// 塔吊每一道附墙与前一道附墙的间隔，对第一道附墙为和±0的距离
+        /// </summary>
+        public List<AttachSegment> AttachSegments { get; set; }
+        /// <summary>
         /// 塔吊臂架长度
         /// </summary>
         public double JibLength { get; set; }
+    }
+
+    public class AttachSegment
+    {
+        public int Index { get; set; }
+        public double UpperBound { get; set; }
+        public double LowerBound { get; set; }
+        public override string ToString()
+        {
+            return "[" + UpperBound + "," + LowerBound + "]";
+        }
     }
 }

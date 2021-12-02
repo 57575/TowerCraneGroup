@@ -11,14 +11,29 @@ namespace TowerCraneGroup.InputModels
         /// 楼宇编号
         /// </summary>
         public int Id { get; set; }
+
+        public string BuildingCode { get; set; }
         /// <summary>
         /// 楼宇的进度计划，即达到X米的时间T
         /// </summary>
         public Dictionary<DateTime, double> Process { get; set; }
 
-        public Dictionary<DateTime, double> OrderProcess()
+        public BuildingProcessing()
         {
-            return Process.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            Process = new Dictionary<DateTime, double>();
+        }
+
+        public double GetHeightByFloorIndex(int floorIndex)
+        {
+            if (floorIndex >= this.Process.Values.Count)
+                return this.Process.Values.ToList()[floorIndex - 1];
+            else
+                return Process.Values.ToList()[floorIndex];
+        }
+
+        public DateTime GetDateTimeByFloorIndex(int floorIndex)
+        {
+            return Process.Keys.ToList()[floorIndex];
         }
 
         public double GetFinalStructureHeighth()
