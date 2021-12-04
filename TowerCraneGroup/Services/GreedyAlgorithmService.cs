@@ -2,19 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
 using TowerCraneGroup.SolutionModels;
+using TowerCraneGroup.Enums.Crane;
 using Newtonsoft.Json;
+using TowerCraneGroup.InputModels.Crane;
+using TowerCraneGroup.InputModels.Process;
 
 namespace TowerCraneGroup.Services
 {
-    public class GreedyAlgorithmService
+    internal class GreedyAlgorithmService
     {
         private Dictionary<int, TowerCrane> Towers { get; set; }
         private List<TowerChargeBuilding> TowerCharges { get; set; }
         private Dictionary<int, BuildingProcessing> Buildings { get; set; }
         private Dictionary<int, List<CollisionRelation>> Collision { get; set; }
+        private Dictionary<int, int> AttachRelations { get; set; }
         private List<FinishTimeHelper> FinishTimeTowers { get; set; }
         private List<TowerChargeHelper> TowerChargeHelpers { get; set; }
         private Individual Solution { get; set; }
@@ -22,6 +25,7 @@ namespace TowerCraneGroup.Services
         public GreedyAlgorithmService(
             Dictionary<int, TowerCrane> towerInfo,
             List<TowerChargeBuilding> towerCharge,
+            List<TowerAttachRelation> attachRelationInputModels,
             Dictionary<int, BuildingProcessing> buildings,
             Dictionary<int, List<CollisionRelation>> collisionsDic,
             Dictionary<int, int> generateOrder = null
@@ -31,6 +35,7 @@ namespace TowerCraneGroup.Services
             TowerCharges = towerCharge;
             Buildings = buildings;
             Collision = collisionsDic;
+            AttachRelations = attachRelationInputModels.ToDictionary(x => x.TowerId, x => x.BuildingId);
             FinishTimeTowers = new List<FinishTimeHelper>();
             TowerChargeHelpers = new List<TowerChargeHelper>();
             Solution = new Individual();
@@ -74,7 +79,7 @@ namespace TowerCraneGroup.Services
                 {
                     gene = GenerateGeneWithoutOtherTower(towerId, chargeBuildingId);
                 }
-                TowerChargeHelper towerChargeHelper = new TowerChargeHelper(geneIndex, towerId, chargeBuildingId, building.Process.Count, towerCrane.SectionHeight, towerCrane.StartHeight);
+                TowerChargeHelper towerChargeHelper = new TowerChargeHelper(geneIndex, towerId, chargeBuildingId, building.Process.Count, towerCrane.SectionHeight, towerCrane.StartHeight, AttachRelations[towerId]);
                 TowerChargeHelpers.Add(towerChargeHelper);
                 Solution.Genes.Add(gene);
                 if (geneIndex + 1 < Towers.Count)

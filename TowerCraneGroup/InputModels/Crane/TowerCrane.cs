@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace TowerCraneGroup.Entities
+namespace TowerCraneGroup.InputModels.Crane
 {
     public class TowerCrane
     {
@@ -40,25 +40,20 @@ namespace TowerCraneGroup.Entities
         /// <summary>
         /// 塔吊每次附墙之后的最大提升节数
         /// </summary>
-        public Dictionary<int, int> LiftSectionNumDic { get; set; }
+        internal Dictionary<int, int> LiftSectionNumDic { get; set; }
         /// <summary>
         /// 塔吊每一道附墙与前一道附墙的间隔，对第一道附墙为和±0的距离
         /// </summary>
-        public List<AttachSegment> AttachSegments { get; set; }
-        /// <summary>
-        /// 塔吊臂架长度
-        /// </summary>
-        public double JibLength { get; set; }
-    }
+        public List<CraneAttachSegment> AttachSegments { get; internal set; }
 
-    public class AttachSegment
-    {
-        public int Index { get; set; }
-        public double UpperBound { get; set; }
-        public double LowerBound { get; set; }
-        public override string ToString()
+        public void ImportAttachment(List<CraneAttachSegment> attachSegments)
         {
-            return "[" + UpperBound + "," + LowerBound + "]";
+            AttachSegments = attachSegments;
+            LiftSectionNumDic = new Dictionary<int, int>();
+            attachSegments.OrderBy(x => x.Index).ToList().ForEach(x =>
+            {
+                LiftSectionNumDic.Add(x.Index, x.CantileverSectionNum);
+            });
         }
     }
 }

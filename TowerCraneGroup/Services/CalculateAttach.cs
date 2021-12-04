@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
+using TowerCraneGroup.InputModels.Crane;
+using TowerCraneGroup.InputModels.Process;
 using TowerCraneGroup.SolutionModels;
+using TowerCraneGroup.ViewModels.Crane;
 
 namespace TowerCraneGroup.Services
 {
-    public static class CalculateAttach
+    internal static class CalculateAttach
     {
-        public static List<TowerAttach> CalculateAndPrint(Individual solution, List<TowerCrane> towers, List<TowerChargeHelper> towerChargeHelpers, Dictionary<int, BuildingProcessing> buildingsDic)
+        internal static List<TowerAttach> Caleculate(List<List<int>> genes, List<TowerCrane> towers, List<TowerChargeHelper> towerChargeHelpers, Dictionary<int, BuildingProcessing> buildingsDic)
         {
             List<TowerAttach> results = new List<TowerAttach>();
 
@@ -28,21 +30,18 @@ namespace TowerCraneGroup.Services
                     BuildingId = charge.BuildingId,
                     BuildingCode = building.BuildingCode
                 };
-                result.AttachDetails.AddRange(Calculate(solution, charge, building, towerDic[charge.TowerId].IndependentHeight));
+                result.AttachDetails.AddRange(Calculate(genes, charge, building, towerDic[charge.TowerId].IndependentHeight));
                 results.Add(result);
             }
-
-            Print(results);
-
             return results;
         }
 
-        private static List<TowerAttachDetail> Calculate(Individual solution, TowerChargeHelper charge, BuildingProcessing building, double independentHeight)
+        private static List<TowerAttachDetail> Calculate(List<List<int>> genes, TowerChargeHelper charge, BuildingProcessing building, double independentHeight)
         {
             List<TowerAttachDetail> results = new List<TowerAttachDetail>();
             int floorIndex = 0;
             double currentTowerHeight = charge.TowerStartHeight;
-            solution.Genes[charge.GeneIndex].ForEach(gene =>
+            genes[charge.GeneIndex].ForEach(gene =>
             {
                 floorIndex++;
                 currentTowerHeight += gene * charge.TowerSectionLength;

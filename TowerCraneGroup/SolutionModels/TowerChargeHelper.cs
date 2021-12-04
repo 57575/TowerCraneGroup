@@ -17,7 +17,7 @@ namespace TowerCraneGroup.SolutionModels
 
         }
 
-        public TowerChargeHelper(int index, int towerId, int buildingId, int floorNum, double sectionHeight, double startHeight)
+        public TowerChargeHelper(int index, int towerId, int buildingId, int floorNum, double sectionHeight, double startHeight,int attachBuilding)
         {
             GeneIndex = index;
             TowerId = towerId;
@@ -25,6 +25,7 @@ namespace TowerCraneGroup.SolutionModels
             TowerSectionLength = sectionHeight;
             TowerStartHeight = startHeight;
             FloorNumber = floorNum;
+            AttachBuildingId = attachBuilding;
         }
 
         public TowerChargeHelper(int index, TowerChargeBuilding towerChargeBuilding, int floorNum, double sectionHeight, double startHeight)
@@ -60,5 +61,9 @@ namespace TowerCraneGroup.SolutionModels
         /// 建筑的楼层数
         /// </summary>
         public int FloorNumber { get; private set; }
+        /// <summary>
+        /// 附墙的楼的Id
+        /// </summary>
+        public int AttachBuildingId { get; private set; }
     }
 }

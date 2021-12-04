@@ -3,9 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
 using Newtonsoft.Json.Serialization;
+using TowerCraneGroup.Enums.Crane;
+using TowerCraneGroup.InputModels.Crane;
+using TowerCraneGroup.InputModels.Process;
 
 namespace TowerCraneGroup.SolutionModels
 {
