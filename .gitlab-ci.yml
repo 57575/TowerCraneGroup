@@ -100,3 +100,5 @@ nuget:
   only:
     - master
     - tags
+  tags:
+    - share
