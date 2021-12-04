@@ -69,6 +69,7 @@ test_job:
     - build_job
 
 deploy_job:
+
   stage: deploy
   only:
     - tags
@@ -87,3 +88,15 @@ deploy_job:
   dependencies:
     - build_job
     - test_job
+
+# nuget push
+nuget:
+  stage: deploy
+  image: mcr.microsoft.com/dotnet/sdk:3.1-buster-slim
+  script:
+    - dotnet pack -c Release -o $PWD/nuget
+    - dotnet nuget add source "$CI_SERVER_URL/api/v4/projects/$CI_PROJECT_ID/packages/nuget/index.json" --name gitlab --username gitlab-ci-token --password $CI_JOB_TOKEN --store-password-in-clear-text
+    - dotnet nuget push "$PWD/nuget/*.nupkg" --source gitlab
+  only:
+    - master
+    - tags
