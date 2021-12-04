@@ -5,13 +5,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using TowerCraneGroup.Entities;
+using TowerCraneGroup.Enums.Crane;
 using TowerCraneGroup.InputModels;
+using TowerCraneGroup.InputModels.Crane;
+using TowerCraneGroup.InputModels.Process;
 using TowerCraneGroup.SolutionModels;
 
 namespace TowerCraneGroup.Services
 {
-    public static class ReadExcelService
+    internal static class ReadExcelService
     {
         static public void InitialTowers(List<TowerCrane> towers, List<BuildingProcessing> buildings, List<TowerChargeBuilding> TowerChargeBuildings)
         {
@@ -118,10 +120,9 @@ namespace TowerCraneGroup.Services
                     SectionHeight = row.GetCell(3).NumericCellValue,
                     StartTime = row.GetCell(4).DateCellValue,
                     EndTime = row.GetCell(5).DateCellValue,
-                    JibLength = 0,
                     LiftSectionNumDic = new Dictionary<int, int>()
                 };
-                for (int i = 9; i < row.LastCellNum; i++)
+                for (int i = 10; i < row.LastCellNum; i++)
                 {
                     string str = row.GetCell(i).StringCellValue;
                     int numIndex = int.Parse(str.Split("<->").FirstOrDefault());
@@ -130,7 +131,7 @@ namespace TowerCraneGroup.Services
                 }
                 results.Add(tower);
             }
-            ReadTowerAttach(attachPath, results);
+            //ReadTowerAttach(attachPath, results);
             return results;
         }
         static public List<CollisionRelation> ReadCollision(string path, Dictionary<string, int> buildings, Dictionary<string, int> towers)
@@ -190,20 +191,54 @@ namespace TowerCraneGroup.Services
                 IRow row = sheet.GetRow(rowIndex);
                 string towerCode = row.GetCell(0).StringCellValue;
                 TowerCrane thisTower = towers.FirstOrDefault(x => x.Code == towerCode);
-                thisTower.AttachSegments = new List<AttachSegment>();
+                thisTower.AttachSegments = new List<CraneAttachSegment>();
                 for (int cellNum = 1; cellNum < row.LastCellNum; cellNum++)
                 {
                     string str = row.GetCell(cellNum).StringCellValue;
                     double lowerBound = double.Parse(str.Split("、").First());
                     double upperBound = double.Parse(str.Split("、").Last());
-                    thisTower.AttachSegments.Add(new AttachSegment
+                    thisTower.AttachSegments.Add(new CraneAttachSegment
                     {
                         Index = cellNum,
                         LowerBound = lowerBound,
-                        UpperBound = upperBound
+                        UpperBound = upperBound,
+                        CantileverSectionNum = thisTower.LiftSectionNumDic[cellNum]
                     });
                 }
+                if (thisTower.LiftSectionNumDic.Count > row.LastCellNum)
+                {
+                    for (int i = row.LastCellNum; i <= thisTower.LiftSectionNumDic.Count; i++)
+                    {
+                        thisTower.AttachSegments.Add(new CraneAttachSegment
+                        {
+                            Index = i,
+                            CantileverSectionNum = thisTower.LiftSectionNumDic[i]
+                        });
+                    };
+                }
             }
+        }
+        static public List<TowerAttachRelation> ReadAttachesInput(string path, List<TowerCrane> towers, List<BuildingProcessing> buildings)
+        {
+            List<TowerAttachRelation> results = new List<TowerAttachRelation>();
+            var towerDic = towers.ToDictionary(x => x.Code, x => x.Id);
+            var buildingDic = buildings.ToDictionary(x => x.BuildingCode, x => x.Id);
+            FileStream stream = new FileStream(path, FileMode.Open);
+            XSSFWorkbook workbook = new XSSFWorkbook(stream);
+            ISheet sheet = workbook.GetSheetAt(0);
+            for (int rowIndex = sheet.FirstRowNum + 1; rowIndex <= sheet.LastRowNum; rowIndex++)
+            {
+                IRow row = sheet.GetRow(rowIndex);
+                string towerCode = row.GetCell(0).StringCellValue;
+                string buildingCode = row.GetCell(8).StringCellValue;
+                TowerAttachRelation result = new TowerAttachRelation()
+                {
+                    BuildingId = buildingDic[buildingCode],
+                    TowerId = towerDic[towerCode]
+                };
+                results.Add(result);
+            }
+            return results;
         }
     }
 }
