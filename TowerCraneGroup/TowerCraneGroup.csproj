@@ -1,10 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <ApplicationIcon />
     <OutputType>Library</OutputType>
     <StartupObject />
+    <Authors>TianYi</Authors>
+    <Company>SCG4</Company>
+    <Description>this package using greedy algorithm to figure out crane group lifting solution</Description>
+    <IsPackable>true</IsPackable>   
   </PropertyGroup>
 
   <ItemGroup>
