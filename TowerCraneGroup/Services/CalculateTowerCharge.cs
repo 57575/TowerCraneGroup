@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TowerCraneGroup.Entities;
+using TowerCraneGroup.Enums.Crane;
 using TowerCraneGroup.InputModels;
+using TowerCraneGroup.InputModels.Crane;
+using TowerCraneGroup.InputModels.Process;
 using TowerCraneGroup.SolutionModels;
 
 namespace TowerCraneGroup.Services
 {
-    public static class CalculateTowerCharge
+    internal static class CalculateTowerCharge
     {
         /// <summary>
         /// 计算塔吊负责的关键楼宇
@@ -16,7 +18,7 @@ namespace TowerCraneGroup.Services
         /// 即计算塔吊负责的所建造的最快的楼宇
         /// </summary>
         /// <returns>（塔吊Id,楼宇Id）</returns>
-        public static List<TowerChargeBuilding> CalculteTowerChargeBuilding(List<BuildingProcessing> processings, Dictionary<int, List<CollisionRelation>> collisions, Dictionary<int, TowerCrane> towersDic)
+        internal static List<TowerChargeBuilding> CalculteTowerChargeBuilding(List<BuildingProcessing> processings, Dictionary<int, List<CollisionRelation>> collisions, Dictionary<int, TowerCrane> towersDic)
         {
             List<TowerChargeBuilding> results = new List<TowerChargeBuilding>();
             foreach (KeyValuePair<int, List<CollisionRelation>> aTower in collisions)
@@ -45,12 +47,12 @@ namespace TowerCraneGroup.Services
             return results;
         }
 
-        public static double GetSecurityHeight()
+        internal static double GetSecurityHeight()
         {
             return 8.00;
         }
 
-        public static int CalculateTowerMaxLiftSection() { return 0; }
+        internal static int CalculateTowerMaxLiftSection() { return 0; }
 
     }
 }

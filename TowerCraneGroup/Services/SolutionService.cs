@@ -1,56 +1,47 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using TowerCraneGroup.InputModels;
-using TowerCraneGroup.InputModels.Crane;
+using System.Threading.Tasks;
+
 using TowerCraneGroup.InputModels.Process;
 using TowerCraneGroup.SolutionModels;
+using TowerCraneGroup.InputModels.Crane;
+using Newtonsoft.Json;
+using TowerCraneGroup.ViewModels.Crane;
 
 namespace TowerCraneGroup.Services
 {
-    public class TrueServe
+    public class SolutionService
     {
         private int GenerationCount { get; set; }
         private Population Population { get; set; }
         private int PopSize { get; set; }
+        private int GenerationNumber { get; set; }
         private List<int> BestTenInHistory = new List<int>();
-
-        public TrueServe(int popSize)
+        public SolutionService(int popSize, int genrationNum)
         {
             PopSize = popSize;
+            GenerationNumber = genrationNum;
             GenerationCount = 0;
         }
-        public void RunServe(string buildingPath, string towerPath, string attachPath, Dictionary<int, int> genOrder = null)
+        public TowerCraneGroupSolution Excute(List<BuildingProcessing> buildingProcessings, List<CollisionRelation> collisions, List<TowerCrane> towerCranes, List<TowerAttachRelation> attaches, Dictionary<int, int> order = null)
         {
-            RunGreedyServe(buildingPath, towerPath, attachPath, genOrder);
-        }
+            Dictionary<int, TowerCrane> towerDic = towerCranes.ToDictionary(x => x.Id);
+            Dictionary<int, List<CollisionRelation>> collisionDic = collisions.GroupBy(x => x.TowerId).ToDictionary(x => x.Key, x => x.ToList());
+            Dictionary<int, BuildingProcessing> buildingDic = buildingProcessings.ToDictionary(x => x.Id);
+            List<TowerChargeBuilding> TowerChargeBuildings = CalculateTowerCharge.CalculteTowerChargeBuilding(buildingProcessings, collisionDic, towerDic);
 
-        private void RunGreedyServe(string buildingPath, string towerPath, string attachPath, Dictionary<int, int> genOrder = null)
-        {
-            List<BuildingProcessing> buildings = ReadExcelService.ReadBuilding(buildingPath);
-            var buildingDic = buildings.ToDictionary(x => x.Id);
-            List<TowerCrane> towers = ReadExcelService.ReadTowers(towerPath, attachPath);
-            var towerDic = towers.ToDictionary(x => x.Id);
-            List<CollisionRelation> collision = ReadExcelService.ReadCollision(towerPath, buildings.ToDictionary(x => x.BuildingCode, x => x.Id), towers.ToDictionary(x => x.Code, x => x.Id));
-            Dictionary<int, List<CollisionRelation>> collisionDic = collision.GroupBy(x => x.TowerId).ToDictionary(x => x.Key, x => x.ToList());
-            List<TowerAttachRelation> attaches = ReadExcelService.ReadAttachesInput(towerPath, towers, buildings);
-            List<TowerChargeBuilding> TowerChargeBuildings = CalculateTowerCharge.CalculteTowerChargeBuilding(buildings, collisionDic, towers.ToDictionary(x => x.Id));
-            ReadExcelService.InitialTowers(towers, buildings, TowerChargeBuildings);
-            ReadExcelService.ReadTowerAttach(attachPath, towers);
-            Console.WriteLine("完成数据准备");
-
-            GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towerDic, TowerChargeBuildings, attaches, buildingDic, collisionDic, genOrder);
+            GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towerDic, TowerChargeBuildings, attaches, buildingDic, collisionDic, order);
 
             Individual greedyIndividual = greedyAlgorithmService.RunService();
             Population = new Population(PopSize, towerDic, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic, collisionDic, false);
             Population.AddIndividual(greedyIndividual);
 
-            var towerChargeHelper = greedyAlgorithmService.GetTowerChargeHelpers().ToDictionary(x => x.GeneIndex);
+            Dictionary<int, TowerChargeHelper> towerChargeHelper = greedyAlgorithmService.GetTowerChargeHelpers().ToDictionary(x => x.GeneIndex);
 
             Individual solution = greedyIndividual;
             while (
-                GenerationCount < 1000
+                GenerationCount < GenerationNumber
                 || BestTenInHistory.Distinct().Count() != 1
                 || solution.CalculateForbidden(collisionDic, buildingDic, towerDic, towerChargeHelper)
                 )
@@ -61,7 +52,7 @@ namespace TowerCraneGroup.Services
                 string bestJson = Population.GetFittest().Serialize();
                 best = JsonConvert.DeserializeObject<Individual>(bestJson);
                 solution = best;
-                if (BestTenInHistory.Count < 10000)
+                if (BestTenInHistory.Count < GenerationNumber)
                 {
                     BestTenInHistory.Add(Population.GetFittest().Fitness);
                 }
@@ -99,17 +90,12 @@ namespace TowerCraneGroup.Services
                         offspring.AddIndividual(newSon2);
                     }
                 }
-                //offspring.CalculateFitness();
                 Population = offspring;
                 GenerationCount++;
-                Console.WriteLine("Generation:" + GenerationCount + "||BestFitness:" + best.Fitness);
-            }
-            string solutionStr = JsonConvert.SerializeObject(solution);
-            Console.WriteLine("Solution:" + solutionStr);
-            solution.Print(towers, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic);
-            OutPutService.OutputSolution(solution.Genes, towers, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic);
-            Console.WriteLine("DONE");
 
+            }
+
+            return OutPutService.OutputSolution(solution.Genes, towerCranes, greedyAlgorithmService.GetTowerChargeHelpers(), buildingDic);
         }
     }
 }

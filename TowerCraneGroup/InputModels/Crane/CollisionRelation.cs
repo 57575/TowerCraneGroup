@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TowerCraneGroup.Enums.Crane;
 
-namespace TowerCraneGroup.SolutionModels
+namespace TowerCraneGroup.InputModels.Crane
 {
     public class CollisionRelation
     {
@@ -13,10 +14,5 @@ namespace TowerCraneGroup.SolutionModels
         public int CollisionId { get; set; }
         //碰撞类型
         public CollisionRelationType RelationType { get; set; }
-    }
-    public enum CollisionRelationType
-    {
-        塔吊与楼宇 = 1,
-        塔吊与塔吊 = 2
     }
 }
