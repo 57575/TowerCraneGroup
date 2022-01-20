@@ -30,6 +30,7 @@ namespace TowerCraneGroup.Services
             Dictionary<int, List<CollisionRelation>> collisionDic = collisions.GroupBy(x => x.TowerId).ToDictionary(x => x.Key, x => x.ToList());
             Dictionary<int, BuildingProcessing> buildingDic = buildingProcessings.ToDictionary(x => x.Id);
             List<TowerChargeBuilding> TowerChargeBuildings = CalculateTowerCharge.CalculteTowerChargeBuilding(buildingProcessings, collisionDic, towerDic);
+            CompletionTowerAttachment.CompletionTower(towerCranes, buildingProcessings, TowerChargeBuildings);
 
             GreedyAlgorithmService greedyAlgorithmService = new GreedyAlgorithmService(towerDic, TowerChargeBuildings, attaches, buildingDic, collisionDic, order);
 

@@ -17,7 +17,7 @@ namespace TowerCraneGroup.SolutionModels
 
         }
 
-        public TowerChargeHelper(int index, int towerId, int buildingId, int floorNum, double sectionHeight, double startHeight,int attachBuilding)
+        public TowerChargeHelper(int index, int towerId, int buildingId, int floorNum, double sectionHeight, double startHeight, int attachBuilding)
         {
             GeneIndex = index;
             TowerId = towerId;
@@ -54,7 +54,7 @@ namespace TowerCraneGroup.SolutionModels
         /// </summary>
         public double TowerStartHeight { get; set; }
         /// <summary>
-        /// 建筑Id
+        /// 建筑Id，控制塔吊必须提升的楼宇Id
         /// </summary>
         public int BuildingId { get; private set; }
         /// <summary>
