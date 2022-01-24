@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TowerCraneGroup.Entities;
 using TowerCraneGroup.InputModels;
+using TowerCraneGroup.InputModels.Crane;
+using TowerCraneGroup.InputModels.Process;
 using TowerCraneGroup.Services;
 
 namespace TowerCraneGroup.SolutionModels

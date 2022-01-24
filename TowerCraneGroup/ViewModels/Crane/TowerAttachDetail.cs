@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace TowerCraneGroup.SolutionModels
+namespace TowerCraneGroup.ViewModels.Crane
 {
     /// <summary>
     /// 附墙的详细信息
