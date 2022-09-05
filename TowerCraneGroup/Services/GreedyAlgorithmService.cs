@@ -224,7 +224,7 @@ namespace TowerCraneGroup.Services
                                 liftSectionNum++;
                             }
                         }
-                        if (liftSectionNum > doubleLiftSectionNum)
+                        if (liftSectionNum >= doubleLiftSectionNum)
                         {
                             double needHeight = GetHeightLiftingOverMax(exisedTowerIds, thisLiftingTime) + GetSecurityHeight() - height;
                             int sectionNum = (int)Math.Ceiling(needHeight / thisTower.SectionHeight);

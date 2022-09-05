@@ -51,41 +51,41 @@ namespace TowerCraneGroup.Services.CollisionDetection
                     double thisTowerHeight = thisTower.StartHeight;
                     for (int floorIndex = 0; floorIndex < Genes[i].Count; floorIndex++)
                     {
-                        if (Genes[i][floorIndex] != 0)
+                        //if (Genes[i][floorIndex] != 0)
+                        //{
+                        double beforeLiftHeight = thisTowerHeight;
+                        double afterLiftHeight = beforeLiftHeight + thisTower.SectionHeight * Genes[i][floorIndex];
+                        //控制楼宇本层完工时间
+                        DateTime thisFloorFinish = buildingDic[towerChargeDic[i].BuildingId].Process.Keys.ToList()[floorIndex];
+                        //检测塔吊和所负责楼宇的碰撞
+                        collisionBuildingIds.ForEach(buil =>
                         {
-                            double beforeLiftHeight = thisTowerHeight;
-                            double afterLiftHeight = beforeLiftHeight + thisTower.SectionHeight * Genes[i][floorIndex];
-                            //控制楼宇本层完工时间
-                            DateTime thisFloorFinish = buildingDic[towerChargeDic[i].BuildingId].Process.Keys.ToList()[floorIndex];
-                            //检测塔吊和所负责楼宇的碰撞
-                            collisionBuildingIds.ForEach(buil =>
-                            {
-                                DateTime? lastTime = null;
-                                var times = buildingDic[buil].Process.Keys.Where(x => x <= thisFloorFinish);
-                                if (times != null && times.Count() != 0)
-                                { lastTime = times.OrderBy(x => x).LastOrDefault(); }
+                            DateTime? lastTime = null;
+                            var times = buildingDic[buil].Process.Keys.Where(x => x <= thisFloorFinish);
+                            if (times != null && times.Count() != 0)
+                            { lastTime = times.OrderBy(x => x).LastOrDefault(); }
 
                                 //lastTime为空，即检测塔吊范围内的楼宇还未开工
                                 if (lastTime != null)
-                                {
+                            {
                                     //检测到有碰撞时，碰撞次数加一
-                                    if (CalculateBuildingCollision(beforeLiftHeight, buildingDic[buil].Process[lastTime.Value]))
+                                    if (CalculateBuildingCollision(afterLiftHeight, buildingDic[buil].Process[lastTime.Value]))
+                                {
+                                    results.Add(new CollisionDetectionErrorMessage
                                     {
-                                        results.Add(new CollisionDetectionErrorMessage
-                                        {
-                                            ErrorType = Enums.CollisionDetecion.CollisionError.楼宇安全距离不足,
-                                            CraneId = thisTower.Id,
-                                            CraneCode = thisTower.Code,
-                                            DateTime = thisFloorFinish,
-                                            CollisionId = buil,
-                                            CollisionCode = buildingDic[buil].BuildingCode
-                                        });
-                                    }
+                                        ErrorType = Enums.CollisionDetecion.CollisionError.楼宇安全距离不足,
+                                        CraneId = thisTower.Id,
+                                        CraneCode = thisTower.Code,
+                                        DateTime = thisFloorFinish,
+                                        CollisionId = buil,
+                                        CollisionCode = buildingDic[buil].BuildingCode
+                                    });
                                 }
-                            });
+                            }
+                        });
 
-                            thisTowerHeight = afterLiftHeight;
-                        }
+                        thisTowerHeight = afterLiftHeight;
+                        //}
                     }
                 }
                 else
