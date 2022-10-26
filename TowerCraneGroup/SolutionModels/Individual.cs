@@ -163,11 +163,11 @@ namespace TowerCraneGroup.SolutionModels
             var low = LowThanNeedNumber(buildingDic, towerChargeDic);
             var building = BuildingCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
             var tower = TowerCollisionNumber(collisionsDic, buildingDic, towerDic, towerChargeDic);
-            if (maxLiftCount < 40)
+            if (maxLiftCount < 400)
             {
-                maxLiftCount = 40;
+                maxLiftCount = 400;
             }
-            Fitness += maxLiftCount * building + maxLiftCount * tower + 10 * lift + 5 * higher + 40 * low;
+            Fitness += maxLiftCount * building + maxLiftCount * tower + 10 * lift + 5 * higher + maxLiftCount * low;
         }
         /// <summary>
         /// 是否有不允许的情况

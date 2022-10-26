@@ -33,13 +33,24 @@ namespace TowerCraneGroup.Services
                     .OrderBy(x => x.StartTime)
                     .FirstOrDefault().Id;
 
-                if (towersDic[aTower.Key].StartHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth()+GetSecurityHeight())
+                if (towersDic[aTower.Key].StartHeight <= processings.Where(x => x.Id == mainBuildingId).FirstOrDefault().GetFinalStructureHeighth() + GetSecurityHeight())
                 {
-                    var result = new TowerChargeBuilding
+                    TowerChargeBuilding result = new TowerChargeBuilding
                     {
                         TowerId = aTower.Key,
                         BuildingId = mainBuildingId
                     };
+                    result.SetRaise(true);
+                    results.Add(result);
+                }
+                else
+                {
+                    TowerChargeBuilding result = new TowerChargeBuilding
+                    {
+                        TowerId = aTower.Key,
+                        BuildingId = mainBuildingId
+                    };
+                    result.SetRaise(false);
                     results.Add(result);
                 }
             }

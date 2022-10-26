@@ -18,5 +18,14 @@ namespace TowerCraneGroup.SolutionModels
         /// 建筑Id
         /// </summary>
         public int BuildingId { get; set; }
+        /// <summary>
+        /// 是否需要提升
+        /// </summary>
+        public bool NeedRaise { get; private set; }
+
+        public void SetRaise(bool needRaise)
+        {
+            this.NeedRaise = needRaise;
+        }
     }
 }

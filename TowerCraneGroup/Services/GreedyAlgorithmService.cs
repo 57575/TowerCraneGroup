@@ -18,6 +18,9 @@ namespace TowerCraneGroup.Services
         private Dictionary<int, BuildingProcessing> Buildings { get; set; }
         private Dictionary<int, List<CollisionRelation>> Collision { get; set; }
         private Dictionary<int, int> AttachRelations { get; set; }
+        /// <summary>
+        /// 所有需要提升的塔吊才进入该队列
+        /// </summary>
         private List<FinishTimeHelper> FinishTimeTowers { get; set; }
         private List<TowerChargeHelper> TowerChargeHelpers { get; set; }
         private Individual Solution { get; set; }
@@ -41,12 +44,15 @@ namespace TowerCraneGroup.Services
             Solution = new Individual();
             towerCharge.ForEach(x =>
             {
-                FinishTimeHelper finishTimeHelper = new FinishTimeHelper
+                if (x.NeedRaise)
                 {
-                    TowerId = x.TowerId,
-                    Time = Buildings[x.BuildingId].Process.Keys.OrderByDescending(x => x).FirstOrDefault()
-                };
-                FinishTimeTowers.Add(finishTimeHelper);
+                    FinishTimeHelper finishTimeHelper = new FinishTimeHelper
+                    {
+                        TowerId = x.TowerId,
+                        Time = Buildings[x.BuildingId].Process.Keys.OrderByDescending(x => x).FirstOrDefault()
+                    };
+                    FinishTimeTowers.Add(finishTimeHelper);
+                }
             });
             if (generateOrder != null && generateOrder.Count != 0)
             {
@@ -64,16 +70,24 @@ namespace TowerCraneGroup.Services
             for (int geneIndex = 0; geneIndex < Towers.Count; geneIndex++)
             {
                 TowerCrane towerCrane = Towers[towerId];
-                int chargeBuildingId = TowerCharges.Where(x => x.TowerId == towerId).FirstOrDefault().BuildingId;
+                TowerChargeBuilding towerCharge = TowerCharges.FirstOrDefault(x => x.TowerId == towerId);
+                int chargeBuildingId = towerCharge.BuildingId;
                 BuildingProcessing building = Buildings[chargeBuildingId];
 
                 List<int> gene = new List<int>();
 
                 List<int> collisionableTowerIds = Collision[towerId].Where(x => x.RelationType == CollisionRelationType.塔吊与塔吊).Select(x => x.CollisionId).ToList();
                 List<int> existedTowerIds = TowerChargeHelpers.Where(x => collisionableTowerIds.Contains(x.TowerId)).Select(x => x.TowerId).ToList();
-                if (existedTowerIds != null && existedTowerIds.Count != 0)
+                if (towerCharge.NeedRaise)
                 {
-                    gene = GenerateGene(towerId, building.Id, existedTowerIds);
+                    if (existedTowerIds != null && existedTowerIds.Count != 0)
+                    {
+                        gene = GenerateGene(towerId, building.Id, existedTowerIds);
+                    }
+                    else
+                    {
+                        gene = GenerateGeneWithoutOtherTower(towerId, chargeBuildingId);
+                    }
                 }
                 else
                 {
@@ -101,7 +115,6 @@ namespace TowerCraneGroup.Services
         {
             return TowerChargeHelpers;
         }
-
         /// <summary>
         /// <para>若该塔吊范围内暂无其它塔吊方案,则该塔吊仅以建筑为约束进行提升</para>
         /// <para>并生成相关基因</para>        
@@ -500,8 +513,24 @@ namespace TowerCraneGroup.Services
             //}
 
             List<int> ids = TowerChargeHelpers.Select(x => x.TowerId).ToList();
-            int result = FinishTimeTowers.Where(x => !ids.Contains(x.TowerId)).OrderByDescending(x => x.Time).ToList().FirstOrDefault().TowerId;
 
+            int result = 0;
+
+            var noneRaiseTower = TowerCharges.FirstOrDefault(x => !x.NeedRaise && !ids.Contains(x.TowerId));
+
+            //先让无需提升的塔吊生成方案
+            if (noneRaiseTower != null)
+            {
+                result = noneRaiseTower.TowerId;
+                return result;
+            }
+
+            FinishTimeHelper nextTower = FinishTimeTowers.Where(x => !ids.Contains(x.TowerId)).OrderByDescending(x => x.Time).ToList().FirstOrDefault();
+
+            if (nextTower != null)
+            {
+                result = nextTower.TowerId;
+            }
             return result;
         }
 
@@ -529,11 +558,6 @@ namespace TowerCraneGroup.Services
                 result.Add(0);
             }
             return result;
-        }
-        struct FinishTimeHelper
-        {
-            public DateTime Time { get; set; }
-            public int TowerId { get; set; }
         }
 
         private void TryDistributeOverLifting()
@@ -666,6 +690,12 @@ namespace TowerCraneGroup.Services
             });
         }
 
+    }
+
+    internal class FinishTimeHelper
+    {
+        public DateTime Time { get; set; }
+        public int TowerId { get; set; }
     }
 
 }

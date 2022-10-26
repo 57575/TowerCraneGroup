@@ -9,7 +9,7 @@
     <Company>SCG4</Company>
     <Description>this package using greedy algorithm to figure out crane group lifting solution</Description>
     <IsPackable>true</IsPackable>
-    <Version>1.1.0</Version>   
+    <Version>1.2.0</Version>   
   </PropertyGroup>
 
   <ItemGroup>
